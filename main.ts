@@ -4,17 +4,20 @@ namespace FxImg {
     let tmpn: number;
     let tbuf: Buffer;
 
+    const NIB_MASK0 = 0xf0;
+    const NIB_MASK1 = 0x0f;
+
     export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b;   
 
     export function create(width: number, height: number): Buffer {
-        const dst = pins.createBuffer(4 + ((1 + (width * height)) >> 1))
+        const dst = pins.createBuffer(4 + ((1 + (width * height)) >>> 1))
         dst.setNumber(NumberFormat.UInt16LE, 0, height);
         dst.setNumber(NumberFormat.UInt16LE, 2, width)
         return dst;
     }
 
     export function fromImage(img: Image) {
-        const dst = pins.createBuffer(4 + ((1 + (img.width * img.height)) >> 1));
+        const dst = pins.createBuffer(4 + ((1 + (img.width * img.height)) >>> 1));
         dst.setNumber(NumberFormat.UInt16LE, 0, img.height);
         dst.setNumber(NumberFormat.UInt16LE, 2, img.width);
         tmpn = img.height,
@@ -43,7 +46,7 @@ namespace FxImg {
 
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
         const i = _pos2idx(x, fximg.getNumber(NumberFormat.UInt16LE, 0), y)
-        const ih = i >> 1;
+        const ih = i >>> 1;
         const curv = fximg[ih + 4]
         let nib0 = curv & 0xf,
             nib1 = curv >> 4;
@@ -56,9 +59,9 @@ namespace FxImg {
 
     export function getPixel(fximg: Buffer, x: number, y: number) {
         const i = _pos2idx(x, fximg.getNumber(NumberFormat.UInt16LE, 0), y);
-        const ih = i >> 1;
+        const ih = i >>> 1;
         const curv = fximg[ih + 4]
-        return (i & 0x1 ? curv & 0xf : curv >> 4)
+        return (i & 0x1 ? curv & 0xf : curv >>> 4)
     }
 
     export function getRow(fximg: Buffer, x: number, dst: Buffer) {
@@ -67,10 +70,10 @@ namespace FxImg {
         const i0 = x * (tmpn != null ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0))
         for (let y = 0; y < len; y++) {
             const i1 = i0 + y;
-            const ih = i1 >> 1;
+            const ih = i1 >>> 1;
             const val = fximg[ih + 4];
             if (i1 & 0x1) dst[y] = val & 0xf;
-            else dst[y] = val >> 4;
+            else dst[y] = val >>> 4;
         }
     }
 
@@ -80,10 +83,10 @@ namespace FxImg {
         const i0 = x * (tmpn != null ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0))
         for (let y = 0; y < len; y++) {
             const i1 = i0 + y;
-            const ih = i1 >> 1;
+            const ih = i1 >>> 1;
             let val = fximg[ih + 4];
-            if (i1 & 0x1) val = (val & 0xf0) | (src[y] & 0x0f);
-            else val = (src[y] << 4) | (val & 0x0f);
+            if (i1 & 0x1) val = (val & NIB_MASK0) | (src[y] & NIB_MASK1);
+            else val = (src[y] << 4) | (val & NIB_MASK1);
             fximg[ih + 4] = val;
         }
     }
