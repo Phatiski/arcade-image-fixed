@@ -80,7 +80,7 @@ namespace FxImg {
         for (;y < len; y += 2) {
             const ih4 = (i >>> 1) + 4;
             const val = fximg[ih4];
-            dst[y + 1] = val & 0xf;
+            dst[y + 1] = val & NIB_MASK1;
             dst[y] = val >>> 4;
             i += 2;
         }
