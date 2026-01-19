@@ -59,9 +59,9 @@ namespace FxImg {
         for (let y = 0; y < len; y++) {
             const i1 = i0 + y;
             const ih = i1 >> 1;
-            const curv = fximg[ih + 4];
-            if (i1 & 0x1) dst[y] = curv & 0xf;
-            else dst[y] = curv >> 4;
+            const val = fximg[ih + 4];
+            if (i1 & 0x1) dst[y] = val & 0xf;
+            else dst[y] = val >> 4;
         }
     }
 
@@ -72,8 +72,10 @@ namespace FxImg {
         for (let y = 0; y < len; y++) {
             const i1 = i0 + y;
             const ih = i1 >> 1;
-            if (i1 & 0x1) fximg[ih + 4] += src[y];
-            else fximg[ih + 4] = src[y] << 4;
+            let val = fximg[ih];
+            if (i1 & 0x1) val = (val & 0xf0) | (src[y] & 0x0f);
+            else val = (src[y] << 4) | (val & 0x0f);
+            fximg[ih] = val;
         }
     }
 }
