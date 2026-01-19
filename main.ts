@@ -2,6 +2,7 @@
 namespace FxImg {
 
     let tmpn: number;
+    let tbuf: Buffer;
 
     export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b;   
 
@@ -16,24 +17,26 @@ namespace FxImg {
         const dst = pins.createBuffer(4 + ((1 + (img.width * img.height)) >> 1));
         dst.setNumber(NumberFormat.UInt16LE, 0, img.height);
         dst.setNumber(NumberFormat.UInt16LE, 2, img.width);
-        tmpn = img.height;
-        const tbuf = pins.createBuffer(img.height);
+        tmpn = img.height,
+        tbuf = pins.createBuffer(tmpn);
         for (let x = 0; x < img.width; x++) {
             img.getRows(x, tbuf);
             setRow(dst, x, tbuf);
         }
+        tbuf = null,
         tmpn = null;
         return dst;
     }
 
     export function toImage(src: Buffer): Image {
         const myimg = image.create(src.getNumber(NumberFormat.UInt16LE, 2), src.getNumber(NumberFormat.UInt16LE, 0));
-        tmpn = myimg.height;
-        const tbuf = pins.createBuffer(myimg.height);
+        tmpn = myimg.height,
+        tbuf = pins.createBuffer(tmpn);
         for (let x = 0; x < myimg.width; x++) {
             getRow(src, x, tbuf);
             myimg.setRows(x, tbuf);
         }
+        tbuf = null,
         tmpn = null;
         return myimg.clone();
     }
