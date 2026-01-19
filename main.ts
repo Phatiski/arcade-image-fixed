@@ -70,14 +70,23 @@ namespace FxImg {
         const h0 = tmpn1 != null ? tmpn1 : fximg.getNumber(NumberFormat.UInt16LE, 0);
         const len = Math.min(dst.length, h0);
         if (len < 1) return;
-        const i0 = x * h0;
-        for (let y = 0; y < len; y ++) {
-            const i1 = i0 + y;
-            const ih = i1 >>> 1;
-            const ih4 = ih + 4;
+        let i = x * h0,
+            y = 0;
+        if (i & 1) {
+            const ih4 = (i >>> 1) + 4;
+            dst[y] = fximg[ih4] & NIB_MASK1;
+            i++, y++;
+        }
+        for (;y < len; y += 2) {
+            const ih4 = (i >>> 1) + 4;
             const val = fximg[ih4];
-            if (i1 & 1) dst[y] = val & 0xf;
-            else dst[y] = val >>> 4;
+            dst[y + 1] = val & 0xf;
+            dst[y] = val >>> 4;
+            i += 2;
+        }
+        if (y < len) {
+            const ih4 = (i >>> 1) + 4;
+            dst[y] = fximg[ih4] >>> 4;
         }
     }
 
@@ -85,15 +94,21 @@ namespace FxImg {
         const h0 = tmpn1 != null ? tmpn1 : fximg.getNumber(NumberFormat.UInt16LE, 0)
         const len = Math.min(src.length, tmpn1);
         if (len < 1) return;
-        const i0 = x * h0;
-        for (let y = 0; y < len; y += 2) {
-            const i1 = i0 + y;
-            const ih = i1 >>> 1;
-            const ih4 = ih + 4;
-            let val = fximg[ih4];
-            if (i1 & 1) val = (val & NIB_MASK0) | (src[y + 1] & NIB_MASK1);
-            else val = (src[y] << 4) | (val & NIB_MASK1);
-            fximg[ih4] = val;
+        let i = x * h0,
+            y = 0;
+        if (i & 1) {
+            const ih4 = (i >>> 1) + 4;
+            fximg[ih4] = (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
+            i++, y++;
+        }
+        for (; y < len; y += 2) {
+            const ih4 = (i >>> 1) + 4;
+            fximg[ih4] = (src[y] << 4) | (src[y + 1] & NIB_MASK1);
+            i += 2;
+        }
+        if (y < len) {
+            const ih4 = (i >>> 1) + 4;
+            fximg[ih4] = (src[y] << 4) | (fximg[ih4] & NIB_MASK1);
         }
     }
 }
