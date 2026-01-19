@@ -1,7 +1,7 @@
 
 namespace FxImg {
 
-    let tmpn: number;
+    let tmpn: number, tmpn1: number;
     let tbuf: Buffer;
 
     const NIB_MASK0 = 0xf0;
@@ -24,10 +24,12 @@ namespace FxImg {
         dst.setNumber(NumberFormat.UInt16LE, 2, img.width);
         if (isEmptyOrUpdate(tmpn, img.height)) tmpn = img.height
         if (isEmptyOrUpdate(tbuf.length, tmpn)) tbuf = pins.createBuffer(tmpn);
+        tmpn1 = tmpn;
         for (let x = 0; x < img.width; x++) {
             img.getRows(x, tbuf);
             setRow(dst, x, tbuf);
         }
+        tmpn1 = null;
         return dst;
     }
 
@@ -35,17 +37,19 @@ namespace FxImg {
         const myimg = image.create(src.getNumber(NumberFormat.UInt16LE, 2), src.getNumber(NumberFormat.UInt16LE, 0));
         if (isEmptyOrUpdate(tmpn, myimg.height)) tmpn = myimg.height;
         if (isEmptyOrUpdate(tbuf.length, tmpn)) tbuf = pins.createBuffer(tmpn);
+        tmpn1 = tmpn;
         for (let x = 0; x < myimg.width; x++) {
             getRow(src, x, tbuf);
             myimg.setRows(x, tbuf);
         }
+        tmpn1 = null;
         return myimg.clone();
     }
 
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
         const i = _pos2idx(x, fximg.getNumber(NumberFormat.UInt16LE, 0), y)
         const ih = i >>> 1;
-        const ih4 = ih + 4
+        const ih4 = ih + 4;
         const curv = fximg[ih4]
         let nib0 = curv & 0xf,
             nib1 = curv >> 4;
@@ -65,13 +69,14 @@ namespace FxImg {
     }
 
     export function getRow(fximg: Buffer, x: number, dst: Buffer) {
-        const len = Math.min(dst.length, fximg.getNumber(NumberFormat.UInt16LE, 0));
+        const h0 = tmpn1 != null ? tmpn1 : fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const len = Math.min(dst.length, h0);
         if (len < 1) return;
-        const i0 = x * (tmpn != null ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0))
+        const i0 = x * h0;
         for (let y = 0; y < len; y++) {
             const i1 = i0 + y;
             const ih = i1 >>> 1;
-            const ih4 = ih + 4
+            const ih4 = ih + 4;
             const val = fximg[ih4];
             if (i1 & 0x1) dst[y] = val & 0xf;
             else dst[y] = val >>> 4;
@@ -79,9 +84,10 @@ namespace FxImg {
     }
 
     export function setRow(fximg: Buffer, x: number, src: Buffer) {
-        const len = Math.min(src.length, fximg.getNumber(NumberFormat.UInt16LE, 0));
+        const h0 = tmpn1 != null ? tmpn1 : fximg.getNumber(NumberFormat.UInt16LE, 0)
+        const len = Math.min(src.length, tmpn1);
         if (len < 1) return;
-        const i0 = x * (tmpn != null ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0))
+        const i0 = x * h0;
         for (let y = 0; y < len; y++) {
             const i1 = i0 + y;
             const ih = i1 >>> 1;
