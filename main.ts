@@ -4,14 +4,14 @@ namespace FxImg {
     export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b;   
 
     export function create(width: number, height: number): Buffer {
-        const dst = pins.createBuffer(4 + ((width * height) >> 2) + ((width * height) & 0x1))
+        const dst = pins.createBuffer(4 + ((1 + (width * height)) >> 2))
         dst.setNumber(NumberFormat.UInt16LE, 0, height);
         dst.setNumber(NumberFormat.UInt16LE, 2, width)
         return dst;
     }
 
     export function fromImage(img: Image) {
-        const dst = pins.createBuffer(4 + ((img.width * img.height) >> 2) + ((img.width * img.height) & 0x1));
+        const dst = pins.createBuffer(4 + ((1 + (img.width * img.height)) >> 2));
         dst.setNumber(NumberFormat.UInt16LE, 0, img.height);
         dst.setNumber(NumberFormat.UInt16LE, 2, img.width);
         const tbuf = pins.createBuffer(img.height);
