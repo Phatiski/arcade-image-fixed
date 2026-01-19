@@ -77,7 +77,7 @@ namespace FxImg {
             dst[y] = fximg[ih4] & NIB_MASK1;
             i++, y++;
         }
-        for (;y < len; y += 2) {
+        for (;y < len - 1; y += 2) {
             const ih4 = (i >>> 1) + 4;
             const val = fximg[ih4];
             dst[y + 1] = val & NIB_MASK1;
@@ -86,7 +86,7 @@ namespace FxImg {
         }
         if (y < len) {
             const ih4 = (i >>> 1) + 4;
-            dst[y] = fximg[ih4] >>> 4;
+            dst[y] = (i & 1) ? (fximg[ih4] & NIB_MASK1) : (fximg[ih4] >>> 4);
         }
     }
 
