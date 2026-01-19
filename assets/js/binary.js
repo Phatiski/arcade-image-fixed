@@ -1,5 +1,5 @@
-// meta={"simUrl":"https://trg-arcade.userpxt.io/v2.0.63/---simulator","cdnUrl":"https://cdn.makecode.com","version":"0.0.10","target":"arcade","targetVersion":"2.0.63","repo":"phatiski/arcade-image-fixed"}
-// total=1643554 new=28.94% cached=66.75% other=4.30%
+// meta={"simUrl":"https://trg-arcade.userpxt.io/v2.0.63/---simulator","cdnUrl":"https://cdn.makecode.com","version":"0.0.11","target":"arcade","targetVersion":"2.0.63","repo":"phatiski/arcade-image-fixed"}
+// total=1641948 new=28.87% cached=66.82% other=4.31%
 (function (ectx) {
 'use strict';
 const runtime = ectx.runtime;
@@ -428,7 +428,7 @@ const pxsim_pxtrt = pxsim.pxtrt;
 const pxsim_numops = pxsim.numops;
 
 
-function _main___P160776(s) {
+function _main___P182241(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -826,19 +826,18 @@ switch (step) {
     s.callLocIdx = 62; s.pc = 36; return s.tmp_0;
   case 36:
     r0 = s.retval;
-    globals._pos2idx___160357 = (_pos2idx_inline__P160356);
-    globals.isEmptyOrUpdate___160368 = (isEmptyOrUpdate_inline__P160367);
+    globals._pos2idx___181821 = (_pos2idx_inline__P181820);
     r0 = undefined;
     return leave(s, r0)
   default: oops()
 } } }
-_main___P160776.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
-_main___P160776.continuations = [  ]
+_main___P182241.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
+_main___P182241.continuations = [  ]
 
-function _main___P160776_mk(s) {
+function _main___P182241_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: _main___P160776, depth: s.depth + 1,
+        parent: s, fn: _main___P182241, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   tmp_1: undefined,
@@ -1377,7 +1376,7 @@ function gameOverConfig_inline__P22951_mk(s) {
 
 
 
-function _pos2idx_inline__P160356(s) {
+function _pos2idx_inline__P181820(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -1399,77 +1398,17 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-_pos2idx_inline__P160356.info = {"start":165,"length":54,"line":9,"column":28,"endLine":9,"endColumn":82,"fileName":"main.ts","functionName":"inline","argumentNames":["a","amax","b"]}
+_pos2idx_inline__P181820.info = {"start":165,"length":54,"line":9,"column":28,"endLine":9,"endColumn":82,"fileName":"main.ts","functionName":"inline","argumentNames":["a","amax","b"]}
 
-function _pos2idx_inline__P160356_mk(s) {
+function _pos2idx_inline__P181820_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: _pos2idx_inline__P160356, depth: s.depth + 1,
+        parent: s, fn: _pos2idx_inline__P181820, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
   arg1: undefined,
   arg2: undefined,
-} }
-
-
-
-
-
-function isEmptyOrUpdate_inline__P160367(s) {
-let r0 = s.r0, step = s.pc;
-s.pc = -1;
-
-
-while (true) {
-if (yieldSteps-- < 0 && maybeYield(s, step, r0) || runtime !== pxsim.runtime) return null;
-switch (step) {
-  case 0:
-
-    if (s.lambdaArgs) {
-      s.arg0 = (s.lambdaArgs[0]);
-      s.arg1 = (s.lambdaArgs[1]);
-      s.lambdaArgs = null;
-    }
-    r0 = (s.arg0 == null);
-    s.tmp_0 = r0;
-    r0 = pxsim_numops_toBool(s.tmp_0);
-    if (!r0) { step = 1; continue; }
-    r0 = s.tmp_0;
-    { step = 4; continue; }
-  case 1:
-    r0 = (s.arg0 != null);
-    s.tmp_1 = r0;
-    r0 = pxsim_numops_toBool(s.tmp_1);
-    if (r0) { step = 2; continue; }
-    r0 = s.tmp_1;
-    { step = 3; continue; }
-  case 2:
-    r0 = (s.arg0 !== s.arg1);
-  case 3:
-    // jmp value (already in r0)
-    s.tmp_2 = r0;
-    r0 = s.tmp_2;
-  case 4:
-    // jmp value (already in r0)
-    s.tmp_3 = r0;
-    r0 = s.tmp_3;
-    return leave(s, r0)
-  default: oops()
-} } }
-isEmptyOrUpdate_inline__P160367.info = {"start":250,"length":70,"line":11,"column":28,"endLine":11,"endColumn":98,"fileName":"main.ts","functionName":"inline","argumentNames":["cur","next"]}
-
-function isEmptyOrUpdate_inline__P160367_mk(s) {
-    checkStack(s.depth);
-    return {
-        parent: s, fn: isEmptyOrUpdate_inline__P160367, depth: s.depth + 1,
-        pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
-  tmp_0: undefined,
-  tmp_1: undefined,
-  tmp_2: undefined,
-  tmp_3: undefined,
-  arg0: undefined,
-  arg1: undefined,
 } }
 
 
@@ -42157,7 +42096,7 @@ const sprites_BaseSpriteSayRenderer__C20273_VT = mkVTable({
   },
 });
 
-const breakpoints = setupDebugger(1, ["_pos2idx___160357","isEmptyOrUpdate___160368"])
+const breakpoints = setupDebugger(1, ["_pos2idx___181821"])
 
-return _main___P160776
+return _main___P182241
 })
