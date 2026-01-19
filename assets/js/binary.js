@@ -1,4 +1,4 @@
-// meta={"simUrl":"https://trg-arcade.userpxt.io/v2.0.63/---simulator","cdnUrl":"https://cdn.makecode.com","version":"0.0.12","target":"arcade","targetVersion":"2.0.63","repo":"phatiski/arcade-image-fixed"}
+// meta={"simUrl":"https://trg-arcade.userpxt.io/v2.0.63/---simulator","cdnUrl":"https://cdn.makecode.com","version":"0.0.13","target":"arcade","targetVersion":"2.0.63","repo":"phatiski/arcade-image-fixed"}
 // total=1641948 new=28.87% cached=66.82% other=4.31%
 (function (ectx) {
 'use strict';
@@ -428,7 +428,7 @@ const pxsim_pxtrt = pxsim.pxtrt;
 const pxsim_numops = pxsim.numops;
 
 
-function _main___P202056(s) {
+function _main___P202623(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -826,18 +826,18 @@ switch (step) {
     s.callLocIdx = 62; s.pc = 36; return s.tmp_0;
   case 36:
     r0 = s.retval;
-    globals._pos2idx___201482 = (_pos2idx_inline__P201481);
+    globals._pos2idx___202110 = (_pos2idx_inline__P202109);
     r0 = undefined;
     return leave(s, r0)
   default: oops()
 } } }
-_main___P202056.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
-_main___P202056.continuations = [  ]
+_main___P202623.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
+_main___P202623.continuations = [  ]
 
-function _main___P202056_mk(s) {
+function _main___P202623_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: _main___P202056, depth: s.depth + 1,
+        parent: s, fn: _main___P202623, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   tmp_1: undefined,
@@ -1376,7 +1376,7 @@ function gameOverConfig_inline__P22951_mk(s) {
 
 
 
-function _pos2idx_inline__P201481(s) {
+function _pos2idx_inline__P202109(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -1398,12 +1398,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-_pos2idx_inline__P201481.info = {"start":165,"length":54,"line":9,"column":28,"endLine":9,"endColumn":82,"fileName":"main.ts","functionName":"inline","argumentNames":["a","amax","b"]}
+_pos2idx_inline__P202109.info = {"start":165,"length":54,"line":9,"column":28,"endLine":9,"endColumn":82,"fileName":"main.ts","functionName":"inline","argumentNames":["a","amax","b"]}
 
-function _pos2idx_inline__P201481_mk(s) {
+function _pos2idx_inline__P202109_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: _pos2idx_inline__P201481, depth: s.depth + 1,
+        parent: s, fn: _pos2idx_inline__P202109, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
@@ -42096,7 +42096,7 @@ const sprites_BaseSpriteSayRenderer__C20273_VT = mkVTable({
   },
 });
 
-const breakpoints = setupDebugger(1, ["_pos2idx___201482"])
+const breakpoints = setupDebugger(1, ["_pos2idx___202110"])
 
-return _main___P202056
+return _main___P202623
 })
