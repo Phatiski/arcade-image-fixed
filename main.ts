@@ -1,6 +1,8 @@
 
 namespace FxImg {
 
+    let tmpn: number;
+
     export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b;   
 
     export function create(width: number, height: number): Buffer {
@@ -14,21 +16,25 @@ namespace FxImg {
         const dst = pins.createBuffer(4 + ((1 + (img.width * img.height)) >> 1));
         dst.setNumber(NumberFormat.UInt16LE, 0, img.height);
         dst.setNumber(NumberFormat.UInt16LE, 2, img.width);
+        tmpn = img.height;
         const tbuf = pins.createBuffer(img.height);
         for (let x = 0; x < img.width; x++) {
             img.getRows(x, tbuf);
             setRow(dst, x, tbuf);
         }
+        tmpn = null;
         return dst;
     }
 
     export function toImage(src: Buffer): Image {
         const myimg = image.create(src.getNumber(NumberFormat.UInt16LE, 2), src.getNumber(NumberFormat.UInt16LE, 0));
+        tmpn = myimg.height;
         const tbuf = pins.createBuffer(myimg.height);
         for (let x = 0; x < myimg.width; x++) {
             getRow(src, x, tbuf);
             myimg.setRows(x, tbuf);
         }
+        tmpn = null;
         return myimg.clone();
     }
 
@@ -55,7 +61,7 @@ namespace FxImg {
     export function getRow(fximg: Buffer, x: number, dst: Buffer) {
         const len = Math.min(dst.length, fximg.getNumber(NumberFormat.UInt16LE, 0));
         if (len < 1) return;
-        const i0 = x * fximg.getNumber(NumberFormat.UInt16LE, 0)
+        const i0 = x * (tmpn != null ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0))
         for (let y = 0; y < len; y++) {
             const i1 = i0 + y;
             const ih = i1 >> 1;
@@ -68,7 +74,7 @@ namespace FxImg {
     export function setRow(fximg: Buffer, x: number, src: Buffer) {
         const len = Math.min(src.length, fximg.getNumber(NumberFormat.UInt16LE, 0));
         if (len < 1) return;
-        const i0 = x * fximg.getNumber(NumberFormat.UInt16LE, 0)
+        const i0 = x * (tmpn != null ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0))
         for (let y = 0; y < len; y++) {
             const i1 = i0 + y;
             const ih = i1 >> 1;
