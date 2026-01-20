@@ -1,7 +1,7 @@
 
 namespace FxImage {
 
-    let tmpn: number, tmpn0: number;
+    let tmpn: number, tmpn_: number;
     let tbuf: Buffer;
 
     const NIB_MASK0 = 0xf0;
@@ -25,12 +25,12 @@ namespace FxImage {
         fximg.setNumber(NumberFormat.UInt16LE, 2, img.width);
         if (!tmpn || (tmpn !== img.height)) tmpn = img.height
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
-        tmpn0 = tmpn;
+        tmpn_ = tmpn;
         for (let x = 0; x < img.width; x++) {
             img.getRows(x, tbuf);
             setRow(fximg, x, tbuf);
         }
-        tmpn0 = null;
+        tmpn_ = null;
         return fximg;
     }
 
@@ -38,12 +38,12 @@ namespace FxImage {
         const img = image.create(fximg.getNumber(NumberFormat.UInt16LE, 2), fximg.getNumber(NumberFormat.UInt16LE, 0));
         if (!tmpn || (tmpn !== img.height)) tmpn = img.height;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
-        tmpn0 = tmpn;
+        tmpn_ = tmpn;
         for (let x = 0; x < img.width; x++) {
             getRow(fximg, x, tbuf);
             img.setRows(x, tbuf);
         }
-        tmpn0 = null;
+        tmpn_ = null;
         return img.clone();
     }
 
@@ -63,7 +63,7 @@ namespace FxImage {
         fximgs.setNumber(NumberFormat.UInt16LE, 2, allSize.width);
         if (!tmpn || (tmpn !== allSize.height)) tmpn = allSize.height;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
-        tmpn0 = tmpn;
+        tmpn_ = tmpn;
         let nw = 0;
         for (const img of imgs) {
             for (let x = 0; x < img.width; x++) {
@@ -72,7 +72,7 @@ namespace FxImage {
             }
             nw += allSize.width
         }
-        tmpn0 = null;
+        tmpn_ = null;
         return fximgs;
     }
 
@@ -81,7 +81,7 @@ namespace FxImage {
         const img = image.create(fximgs.getNumber(NumberFormat.UInt16LE, 2), fximgs.getNumber(NumberFormat.UInt16LE, 0));
         if (!tmpn || (tmpn !== img.height)) tmpn = img.height;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
-        tmpn0 = tmpn;
+        tmpn_ = tmpn;
         for (let nw = 0; (((1 + (nw * img.height)) >> 1) + 4) < fximgs.length; nw += img.width) {
             for (let x = 0; x < img.width; x++) {
                 getRow(fximgs, nw + x, tbuf);
@@ -89,7 +89,7 @@ namespace FxImage {
             }
             imgs.push(img.clone())
         }
-        tmpn0 = null;
+        tmpn_ = null;
         return imgs.slice();
     }
 
@@ -115,7 +115,7 @@ namespace FxImage {
     }
 
     export function getRow(fximg: Buffer, x: number, dst: Buffer) {
-        const h0 = tmpn0 != null ? tmpn0 : fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const h0 = tmpn_ ? tmpn_ : fximg.getNumber(NumberFormat.UInt16LE, 0);
         const len = Math.min(dst.length, h0);
         if (len < 1) return;
         let i = x * h0,
@@ -139,8 +139,8 @@ namespace FxImage {
     }
 
     export function setRow(fximg: Buffer, x: number, src: Buffer) {
-        const h0 = tmpn0 != null ? tmpn0 : fximg.getNumber(NumberFormat.UInt16LE, 0)
-        const len = Math.min(src.length, tmpn0);
+        const h0 = tmpn_ ? tmpn_ : fximg.getNumber(NumberFormat.UInt16LE, 0)
+        const len = Math.min(src.length, h0);
         if (len < 1) return;
         let i = x * h0,
             y = 0;
@@ -166,112 +166,74 @@ namespace FxImage {
 /* // test zone
 scene.setBackgroundColor(1)
 const imgfxa = FxImage.fromImage(img`
-    ..........666666666666..........
-    ........6667777777777666........
-    ......66677777777777777666......
-    .....6677777779999777777766.....
-    ....667777779966669977777766....
-    ....677777799668866117777776....
-    ...66777779966877861197777766...
-    ...66777799668677686699777766...
-    ...88777796688888888669777788...
-    ...88777788888888888888777788...
-    ...88977888679999997688877988...
-    ...88977886777777777768877988...
-    ...88997777777777777777779988...
-    ...88799777777777777777711788...
-    ...88679997777777777779117688...
-    ..cc866679999999999999976668cc..
-    .ccbc6666679999999999766666cbcc.
-    .fcbcc66666666666666666666ccbcf.
-    .fcbbcc666666666666666666ccbdcf.
-    .f8bbbccc66666666666666cccbddcf.
-    .f8cbbbbccccccccccccccccbdddbcf.
-    .f8ccbbbbbccccccccccccb111ddccf.
-    .f6ccccbbbddddddddddddd111dcccf.
-    .f6ccccccbbddddddddddddddbbcccf.
-    .f6cccccccccccccbbbbbbbbbdbcccf.
-    ..f6cccccccccbbbbbbbbbbbddbccf..
-    ..f6cccccccccbbbbbbbbbbbddbccf..
-    ..ff6ccccccccbbbbbbbbbbbddbcff..
-    ...ff6cccccccbbbbbbbbbbbddbff...
-    ....ffcccccccbbbbbbbbbbbdbff....
-    ......ffccccbbbbbbbbbbbbff......
-    ........ffffffffffffffff........
+    .
 `)
 
 const imgfxas = FxImage.fromFrame([
     img`
-        ..........666666666666..........
-        ........6667777777777666........
-        ......66677777777777777666......
-        .....6677777779999777777766.....
-        ....667777779966669977777766....
-        ....677777799668866117777776....
-        ...66777779966877861197777766...
-        ...66777799668677686699777766...
-        ...88777796688888888669777788...
-        ...88777788888888888888777788...
-        ...88977888679999997688877988...
-        ...88977886777777777768877988...
-        ...88997777777777777777779988...
-        ...88799777777777777777711788...
-        ...88679997777777777779117688...
-        ..cc866679999999999999976668cc..
-        .ccbc6666679999999999766666cbcc.
-        .fcbcc66666666666666666666ccbcf.
-        .fcbbcc666666666666666666ccbdcf.
-        .f8bbbccc66666666666666cccbddcf.
-        .f8cbbbbccccccccccccccccbdddbcf.
-        .f8ccbbbbbccccccccccccb111ddccf.
-        .f6ccccbbbddddddddddddd111dcccf.
-        .f6ccccccbbddddddddddddddbbcccf.
-        .f6cccccccccccccbbbbbbbbbdbcccf.
-        ..f6cccccccccbbbbbbbbbbbddbccf..
-        ..f6cccccccccbbbbbbbbbbbddbccf..
-        ..ff6ccccccccbbbbbbbbbbbddbcff..
-        ...ff6cccccccbbbbbbbbbbbddbff...
-        ....ffcccccccbbbbbbbbbbbdbff....
-        ......ffccccbbbbbbbbbbbbff......
-        ........ffffffffffffffff........
+        .
     `,
     img`
-        ................................
-        ................................
-        ................................
-        ................................
-        ................................
-        ..........888888888888..........
-        ........8887777777777888........
-        ......88877666666666677888......
-        .....8877666667777666667788.....
-        ....887666667788887766666788....
-        ....866666677888888996666678....
-        ...88666667788877889976666688...
-        ...88666677888677688877666688...
-        ...88666778888888888887766688...
-        ...88667788888888888888776688...
-        ..cc866788866777777668887668cc..
-        .ccbc8668866666666666688668cbcc.
-        .fcbcc86666666666666666668ccbcf.
-        .fcbbcc886666666666666688ccbdcf.
-        .f8bbbccc88888888888888cccbddcf.
-        .f8cbbbbccccccccccccccccbdddbcf.
-        .f8ccbbbbbccccccccccccb11dddccf.
-        .f6ccccbbbdddddddddddd111ddcccf.
-        .f6ccccccbbddddddddddd11dbbcccf.
-        .f6cccccccccccccbbbbbbbbbdbcccf.
-        ..f6cccccccccbbbbbbbbbbbddbccf..
-        ..f6cccccccccbbbbbbbbbbbddbccf..
-        ..ff6ccccccccbbbbbbbbbbbddbcff..
-        ...ff6cccccccbbbbbbbbbbbddbff...
-        ....ffcccccccbbbbbbbbbbbdbff....
-        ......ffccccbbbbbbbbbbbbff......
-        ........ffffffffffffffff........
+        .
     `
 ])
 
 let mySprite = sprites.create(FxImage.toImage(imgfxa), SpriteKind.Player)
 
 // animation.runImageAnimation(mySprite, FxImage.toFrame(imgfxas), 100, true)
+*/
+/* // test zone: mutitask test
+scene.setBackgroundColor(1)
+
+let mySpriteA = sprites.create(img`
+    4 4 4 . . 4 4 4 4 4 . . . . . .
+    4 5 5 4 4 5 5 5 5 5 4 4 . . . .
+    b 4 5 5 1 5 1 1 1 5 5 5 4 . . .
+    . b 5 5 5 5 1 1 5 5 1 1 5 4 . .
+    . b d 5 5 5 5 5 5 5 5 1 1 5 4 .
+    b 4 5 5 5 5 5 5 5 5 5 5 1 5 4 .
+    c d 5 5 5 5 5 5 5 5 5 5 5 5 5 4
+    c d 4 5 5 5 5 5 5 5 5 5 5 1 5 4
+    c 4 5 5 5 d 5 5 5 5 5 5 5 5 5 4
+    c 4 d 5 4 5 d 5 5 5 5 5 5 5 5 4
+    . c 4 5 5 5 5 d d d 5 5 5 5 5 b
+    . c 4 d 5 4 5 d 4 4 d 5 5 5 4 c
+    . . c 4 4 d 4 4 4 4 4 d d 5 d c
+    . . . c 4 4 4 4 4 4 4 4 5 5 5 4
+    . . . . c c b 4 4 4 b b 4 5 4 4
+    . . . . . . c c c c c c b b 4 .
+`, SpriteKind.Player)
+mySpriteA.x += 32
+let mySpriteB = sprites.create(img`
+    . . . . . . . e c 7 . . . . . .
+    . . . . e e e c 7 7 e e . . . .
+    . . c e e e e c 7 e 2 2 e e . .
+    . c e e e e e c 6 e e 2 2 2 e .
+    . c e e e 2 e c c 2 4 5 4 2 e .
+    c e e e 2 2 2 2 2 2 4 5 5 2 2 e
+    c e e 2 2 2 2 2 2 2 2 4 4 2 2 e
+    c e e 2 2 2 2 2 2 2 2 2 2 2 2 e
+    c e e 2 2 2 2 2 2 2 2 2 2 2 2 e
+    c e e 2 2 2 2 2 2 2 2 2 2 2 2 e
+    c e e 2 2 2 2 2 2 2 2 2 2 4 2 e
+    . e e e 2 2 2 2 2 2 2 2 2 4 e .
+    . 2 e e 2 2 2 2 2 2 2 2 4 2 e .
+    . . 2 e e 2 2 2 2 2 4 4 2 e . .
+    . . . 2 2 e e 4 4 4 2 e e . . .
+    . . . . . 2 2 e e e e . . . . .
+`, SpriteKind.Player)
+mySpriteB.x -= 32
+
+basic.forever(() => {
+    const imgfxa = FxImage.fromImage(mySpriteA.image)
+    mySpriteA.image.fill(0)
+    //basic.pause(20)
+    mySpriteA.setImage(FxImage.toImage(imgfxa))
+})
+basic.forever(() => {
+    const imgfxb = FxImage.fromImage(mySpriteB.image)
+    mySpriteB.image.fill(0)
+    //basic.pause(20)
+    mySpriteB.setImage(FxImage.toImage(imgfxb))
+})
 */
