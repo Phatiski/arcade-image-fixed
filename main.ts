@@ -1,7 +1,7 @@
 
 namespace FxImage {
 
-    let tmpns: number[] = [];
+    let tmpns: number[] = [], tmpnl: number = 0;
     let tbuf: Buffer;
 
     const NIB_MASK0 = 0xf0;
@@ -24,26 +24,26 @@ namespace FxImage {
         fximg.setNumber(NumberFormat.UInt16LE, 0, img.height);
         fximg.setNumber(NumberFormat.UInt16LE, 2, img.width);
         const tmpn = img.height
-        tmpns.push(tmpn);
+        tmpns.push(tmpn), tmpnl++;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         for (let x = 0; x < img.width; x++) {
             img.getRows(x, tbuf);
             setRow(fximg, x, tbuf);
         }
-        tmpns.pop();
+        tmpns.pop(), tmpnl--;
         return fximg;
     }
 
     export function toImage(fximg: Buffer): Image {
         const img = image.create(fximg.getNumber(NumberFormat.UInt16LE, 2), fximg.getNumber(NumberFormat.UInt16LE, 0));
         const tmpn = img.height;
-        tmpns.push(tmpn)
+        tmpns.push(tmpn), tmpnl++;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         for (let x = 0; x < img.width; x++) {
             getRow(fximg, x, tbuf);
             img.setRows(x, tbuf);
         }
-        tmpns.pop();
+        tmpns.pop(), tmpnl--;
         return img.clone();
     }
 
@@ -62,7 +62,7 @@ namespace FxImage {
         fximgs.setNumber(NumberFormat.UInt16LE, 0, allSize.height);
         fximgs.setNumber(NumberFormat.UInt16LE, 2, allSize.width);
         const tmpn = allSize.height;
-        tmpns.push(tmpn)
+        tmpns.push(tmpn), tmpnl++;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         let nw = 0;
         for (const img of imgs) {
@@ -72,7 +72,7 @@ namespace FxImage {
             }
             nw += allSize.width
         }
-        tmpns.pop();
+        tmpns.pop(), tmpnl--;
         return fximgs;
     }
 
@@ -80,7 +80,7 @@ namespace FxImage {
         const imgs = []
         const img = image.create(fximgs.getNumber(NumberFormat.UInt16LE, 2), fximgs.getNumber(NumberFormat.UInt16LE, 0));
         const tmpn = img.height;
-        tmpns.push(tmpn)
+        tmpns.push(tmpn), tmpnl++;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         for (let nw = 0; (((1 + (nw * img.height)) >> 1) + 4) < fximgs.length; nw += img.width) {
             for (let x = 0; x < img.width; x++) {
@@ -89,7 +89,7 @@ namespace FxImage {
             }
             imgs.push(img.clone())
         }
-        tmpns.pop();
+        tmpns.pop(), tmpnl--;
         return imgs.slice();
     }
 
@@ -115,7 +115,7 @@ namespace FxImage {
     }
 
     export function getRow(fximg: Buffer, x: number, dst: Buffer) {
-        const h0 = tmpns.length > 0 ? tmpns[tmpns.length - 1] : fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const h0 = tmpnl > 0 ? tmpns[tmpnl - 1] : fximg.getNumber(NumberFormat.UInt16LE, 0);
         const len = Math.min(dst.length, h0);
         if (len < 1) return;
         let i = x * h0,
@@ -139,7 +139,7 @@ namespace FxImage {
     }
 
     export function setRow(fximg: Buffer, x: number, src: Buffer) {
-        const h0 = tmpns.length > 0 ? tmpns[tmpns.length - 1] : fximg.getNumber(NumberFormat.UInt16LE, 0)
+        const h0 = tmpnl > 0 ? tmpns[tmpnl - 1] : fximg.getNumber(NumberFormat.UInt16LE, 0)
         const len = Math.min(src.length, h0);
         if (len < 1) return;
         let i = x * h0,
@@ -209,13 +209,13 @@ mySpriteB.x -= 32
 basic.forever(() => {
     const imgfxa = FxImage.fromImage(mySpriteA.image)
     mySpriteA.image.fill(0)
-    // basic.pause(20)
+    //basic.pause(20)
     mySpriteA.setImage(FxImage.toImage(imgfxa))
 })
 basic.forever(() => {
     const imgfxb = FxImage.fromImage(mySpriteB.image)
     mySpriteB.image.fill(0)
-    // basic.pause(20)
+    //basic.pause(20)
     mySpriteB.setImage(FxImage.toImage(imgfxb))
 })
 */
