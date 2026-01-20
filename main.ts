@@ -91,6 +91,7 @@ namespace FxImage {
     }
 
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
+        c &= 0xf;
         const i = _pos2idx(x, fximg.getNumber(NumberFormat.UInt16LE, 0), y)
         const ih4 = (i >>> 1) + 4;
         const curv = fximg[ih4]
@@ -141,22 +142,26 @@ namespace FxImage {
         let i = x * h0,
             y = 0;
         if (i & 1) {
+            src[y] &= 0xf;
             const ih4 = (i >>> 1) + 4;
             fximg[ih4] = (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
             i++, y++;
         }
-        for (; y < len; y += 2) {
+        for (; y < len - 1; y += 2) {
+            src[y] &= 0xf, src[y + 1] &= 0xf;
             const ih4 = (i >>> 1) + 4;
             fximg[ih4] = (src[y] << 4) | (src[y + 1] & NIB_MASK1);
             i += 2;
         }
         if (y < len) {
+            src[y] &= 0xf;
             const ih4 = (i >>> 1) + 4;
-            fximg[ih4] = (src[y] << 4) | (fximg[ih4] & NIB_MASK1);
+            fximg[ih4] = (i & 1) ? (src[y] << 4) | (fximg[ih4] & NIB_MASK1) : (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
         }
     }
 }
 /* // test zone
+scene.setBackgroundColor(1)
 const imgfxa = FxImage.fromImage(img`
     ..........666666666666..........
     ........6667777777777666........
