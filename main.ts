@@ -1,5 +1,5 @@
 
-namespace FxImg {
+namespace FxImage {
 
     let tmpn: number, tmpn0: number;
     let tbuf: Buffer;
@@ -10,38 +10,38 @@ namespace FxImg {
     export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b
 
     export function create(width: number, height: number): Buffer {
-        const dst = pins.createBuffer(4 + ((1 + (width * height)) >>> 1))
-        dst.setNumber(NumberFormat.UInt16LE, 0, height);
-        dst.setNumber(NumberFormat.UInt16LE, 2, width)
-        return dst;
+        const fximg = pins.createBuffer(4 + ((1 + (width * height)) >>> 1))
+        fximg.setNumber(NumberFormat.UInt16LE, 0, height);
+        fximg.setNumber(NumberFormat.UInt16LE, 2, width)
+        return fximg;
     }
 
     export function fromImage(img: Image) {
-        const dst = pins.createBuffer(4 + ((1 + (img.width * img.height)) >>> 1));
-        dst.setNumber(NumberFormat.UInt16LE, 0, img.height);
-        dst.setNumber(NumberFormat.UInt16LE, 2, img.width);
+        const fximg = pins.createBuffer(4 + ((1 + (img.width * img.height)) >>> 1));
+        fximg.setNumber(NumberFormat.UInt16LE, 0, img.height);
+        fximg.setNumber(NumberFormat.UInt16LE, 2, img.width);
         if (!tmpn || (tmpn !== img.height)) tmpn = img.height
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         tmpn0 = tmpn;
         for (let x = 0; x < img.width; x++) {
             img.getRows(x, tbuf);
-            setRow(dst, x, tbuf);
+            setRow(fximg, x, tbuf);
         }
         tmpn0 = null;
-        return dst;
+        return fximg;
     }
 
     export function toImage(fximg: Buffer): Image {
-        const myimg = image.create(fximg.getNumber(NumberFormat.UInt16LE, 2), fximg.getNumber(NumberFormat.UInt16LE, 0));
-        if (!tmpn || (tmpn !== myimg.height)) tmpn = myimg.height;
+        const img = image.create(fximg.getNumber(NumberFormat.UInt16LE, 2), fximg.getNumber(NumberFormat.UInt16LE, 0));
+        if (!tmpn || (tmpn !== img.height)) tmpn = img.height;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         tmpn0 = tmpn;
-        for (let x = 0; x < myimg.width; x++) {
+        for (let x = 0; x < img.width; x++) {
             getRow(fximg, x, tbuf);
-            myimg.setRows(x, tbuf);
+            img.setRows(x, tbuf);
         }
         tmpn0 = null;
-        return myimg.clone();
+        return img.clone();
     }
 
     const maxImgSizes = (imgs: Image[]) => {
@@ -55,9 +55,9 @@ namespace FxImg {
 
     export function fromFrame(imgs: Image[]) {
         const allSize = maxImgSizes(imgs);
-        const dst = pins.createBuffer(4 + ((1 + (allSize.area * imgs.length)) >> 1));
-        dst.setNumber(NumberFormat.UInt16LE, 0, allSize.height);
-        dst.setNumber(NumberFormat.UInt16LE, 2, allSize.width);
+        const fximgs = pins.createBuffer(4 + ((1 + (allSize.area * imgs.length)) >> 1));
+        fximgs.setNumber(NumberFormat.UInt16LE, 0, allSize.height);
+        fximgs.setNumber(NumberFormat.UInt16LE, 2, allSize.width);
         if (!tmpn || (tmpn !== allSize.height)) tmpn = allSize.height;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         tmpn0 = tmpn;
@@ -65,29 +65,29 @@ namespace FxImg {
         for (const img of imgs) {
             for (let x = 0; x < img.width; x++) {
                 img.getRows(x, tbuf);
-                setRow(dst, nw + x, tbuf)
+                setRow(fximgs, nw + x, tbuf)
             }
             nw += allSize.width
         }
         tmpn0 = null;
-        return dst;
+        return fximgs;
     }
 
     export function toFrame(fximgs: Buffer) {
-        const myimgs = []
-        const myimg = image.create(fximgs.getNumber(NumberFormat.UInt16LE, 2), fximgs.getNumber(NumberFormat.UInt16LE, 0));
-        if (!tmpn || (tmpn !== myimg.height)) tmpn = myimg.height;
+        const imgs = []
+        const img = image.create(fximgs.getNumber(NumberFormat.UInt16LE, 2), fximgs.getNumber(NumberFormat.UInt16LE, 0));
+        if (!tmpn || (tmpn !== img.height)) tmpn = img.height;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         tmpn0 = tmpn;
-        for (let nw = 0; (((1 + (nw * myimg.height)) >> 1) + 4) < fximgs.length; nw += myimg.width) {
-            for (let x = 0; x < myimg.width; x++) {
+        for (let nw = 0; (((1 + (nw * img.height)) >> 1) + 4) < fximgs.length; nw += img.width) {
+            for (let x = 0; x < img.width; x++) {
                 getRow(fximgs, nw + x, tbuf);
-                myimg.setRows(x, tbuf);
+                img.setRows(x, tbuf);
             }
-            myimgs.push(myimg.clone())
+            imgs.push(img.clone())
         }
         tmpn0 = null;
-        return myimgs.slice();
+        return imgs.slice();
     }
 
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
@@ -107,7 +107,7 @@ namespace FxImg {
         const ih = i >>> 1;
         const ih4 = ih + 4;
         const curv = fximg[ih4];
-        return (i & 0x1 ? curv & 0xf : curv >>> 4)
+        return (i & 1 ? curv & 0xf : curv >>> 4)
     }
 
     export function getRow(fximg: Buffer, x: number, dst: Buffer) {
@@ -157,7 +157,7 @@ namespace FxImg {
     }
 }
 /* // test zone
-const imgfxa = FxImg.fromImage(img`
+const imgfxa = FxImage.fromImage(img`
     ..........666666666666..........
     ........6667777777777666........
     ......66677777777777777666......
@@ -192,7 +192,7 @@ const imgfxa = FxImg.fromImage(img`
     ........ffffffffffffffff........
 `)
 
-const imgfxas = FxImg.fromFrame([
+const imgfxas = FxImage.fromFrame([
     img`
         ..........666666666666..........
         ........6667777777777666........
@@ -263,7 +263,7 @@ const imgfxas = FxImg.fromFrame([
     `
 ])
 
-let mySprite = sprites.create(FxImg.toImage(imgfxa), SpriteKind.Player)
+let mySprite = sprites.create(FxImage.toImage(imgfxa), SpriteKind.Player)
 
-// animation.runImageAnimation(mySprite, FxImg.toFrame(imgfxas), 100, true)
+// animation.runImageAnimation(mySprite, FxImage.toFrame(imgfxas), 100, true)
 */
