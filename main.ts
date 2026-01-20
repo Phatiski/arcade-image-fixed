@@ -31,13 +31,13 @@ namespace FxImg {
         return dst;
     }
 
-    export function toImage(src: Buffer): Image {
-        const myimg = image.create(src.getNumber(NumberFormat.UInt16LE, 2), src.getNumber(NumberFormat.UInt16LE, 0));
+    export function toImage(fximg: Buffer): Image {
+        const myimg = image.create(fximg.getNumber(NumberFormat.UInt16LE, 2), fximg.getNumber(NumberFormat.UInt16LE, 0));
         if (!tmpn || (tmpn !== myimg.height)) tmpn = myimg.height;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         tmpn0 = tmpn;
         for (let x = 0; x < myimg.width; x++) {
-            getRow(src, x, tbuf);
+            getRow(fximg, x, tbuf);
             myimg.setRows(x, tbuf);
         }
         tmpn0 = null;
@@ -69,37 +69,37 @@ namespace FxImg {
             }
             nw += allSize.width
         }
+        tmpn0 = null;
         return dst;
     }
 
-    export function toFrame(src: Buffer) {
+    export function toFrame(fximgs: Buffer) {
         const myimgs = []
-        const myimg = image.create(src.getNumber(NumberFormat.UInt16LE, 2), src.getNumber(NumberFormat.UInt16LE, 0));
+        const myimg = image.create(fximgs.getNumber(NumberFormat.UInt16LE, 2), fximgs.getNumber(NumberFormat.UInt16LE, 0));
         if (!tmpn || (tmpn !== myimg.height)) tmpn = myimg.height;
         if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
         tmpn0 = tmpn;
-        for (let nw = 0; (((1 + (nw * myimg.height)) >> 1) + 4) < src.length; nw += myimg.width) {
+        for (let nw = 0; (((1 + (nw * myimg.height)) >> 1) + 4) < fximgs.length; nw += myimg.width) {
             for (let x = 0; x < myimg.width; x++) {
-                getRow(src, nw + x, tbuf);
+                getRow(fximgs, nw + x, tbuf);
                 myimg.setRows(x, tbuf);
             }
             myimgs.push(myimg.clone())
         }
+        tmpn0 = null;
         return myimgs.slice();
     }
 
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
         const i = _pos2idx(x, fximg.getNumber(NumberFormat.UInt16LE, 0), y)
-        const ih = i >>> 1;
-        const ih4 = ih + 4;
+        const ih4 = (i >>> 1) + 4;
         const curv = fximg[ih4]
         let nib0 = curv & 0xf,
-            nib1 = curv >> 4;
+            nib1 = curv >>> 4;
         if (i & 1 ? nib0 === c : nib1 === c) return;
         if (i & 1) nib0 = c;
         else nib1 = c;
         fximg[ih4] = (nib1 << 4) + nib0;
-
     }
 
     export function getPixel(fximg: Buffer, x: number, y: number) {
