@@ -7,7 +7,9 @@ namespace FxImage {
     const NIB_MASK0 = 0xf0;
     const NIB_MASK1 = 0x0f;
 
-    export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b
+    export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b;
+
+    export const isEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
 
     export function create(width: number, height: number): Buffer {
         const fximg = pins.createBuffer(4 + ((1 + (width * height)) >>> 1))
@@ -17,6 +19,7 @@ namespace FxImage {
     }
 
     export function fromImage(img: Image) {
+        if (isEmptyImage(img)) return create(img.width, img.height);
         const fximg = pins.createBuffer(4 + ((1 + (img.width * img.height)) >>> 1));
         fximg.setNumber(NumberFormat.UInt16LE, 0, img.height);
         fximg.setNumber(NumberFormat.UInt16LE, 2, img.width);
