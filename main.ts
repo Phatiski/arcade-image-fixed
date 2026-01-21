@@ -4,10 +4,7 @@ namespace FxImage {
     const NIB_MASK0 = 0xf0;
     const NIB_MASK1 = 0x0f;
 
-    const clampIf16 = (x: number) => x < 0x0 || x > 0xf;
-
     export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b;
-
     export const isEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
 
     export function create(width: number, height: number): Buffer {
@@ -101,7 +98,7 @@ namespace FxImage {
     }
 
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
-        if (clampIf16(c)) c &= 0xf;
+        c &= 0xf;
         const i = _pos2idx(x, fximg.getNumber(NumberFormat.UInt16LE, 0), y)
         const ih4 = (i >>> 1) + 4;
         const curv = fximg[ih4]
@@ -152,19 +149,19 @@ namespace FxImage {
         let i = x * h0,
             y = 0;
         if (i & 1) {
-            if (clampIf16(src[y])) src[y] &= 0xf;
+            src[y] &= 0xf;
             const ih4 = (i >>> 1) + 4;
             fximg[ih4] = (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
             i++, y++;
         }
         for (; y < len - 1; y += 2) {
-            if (clampIf16(src[y])) src[y] &= 0xf; if (clampIf16(src[y + 1])) src[y + 1] &= 0xf;
+            src[y] &= 0xf, src[y + 1] &= 0xf;
             const ih4 = (i >>> 1) + 4;
             fximg[ih4] = (src[y] << 4) | (src[y + 1] & NIB_MASK1);
             i += 2;
         }
         if (y < len) {
-            if (clampIf16(src[y])) src[y] &= 0xf;
+            src[y] &= 0xf;
             const ih4 = (i >>> 1) + 4;
             fximg[ih4] = (i & 1) ? (src[y] << 4) | (fximg[ih4] & NIB_MASK1) : (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
         }
