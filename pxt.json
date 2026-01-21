@@ -1,6 +1,6 @@
 {
     "name": "arcade-image-fixed",
-    "version": "0.1.0",
+    "version": "0.0.27",
     "description": "",
     "dependencies": {
         "device": "*"

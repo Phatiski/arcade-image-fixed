@@ -1,4 +1,4 @@
-// meta={"simUrl":"https://trg-arcade.userpxt.io/v2.0.63/---simulator","cdnUrl":"https://cdn.makecode.com","version":"0.0.26","target":"arcade","targetVersion":"2.0.63","repo":"phatiski/arcade-image-fixed"}
+// meta={"simUrl":"https://trg-arcade.userpxt.io/v2.0.63/---simulator","cdnUrl":"https://cdn.makecode.com","version":"0.0.27","target":"arcade","targetVersion":"2.0.63","repo":"phatiski/arcade-image-fixed"}
 // total=1647254 new=29.31% cached=66.31% other=4.38%
 (function (ectx) {
 'use strict';
@@ -430,7 +430,7 @@ const pxsim_pxtrt = pxsim.pxtrt;
 const pxsim_numops = pxsim.numops;
 
 
-function _main___P69803(s) {
+function _main___P74302(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -828,20 +828,20 @@ switch (step) {
     s.callLocIdx = 62; s.pc = 36; return s.tmp_0;
   case 36:
     r0 = s.retval;
-    globals._pos2idx___68966 = (_pos2idx_inline__P68965);
-    globals.isEmptyImage___68977 = (isEmptyImage_inline__P68976);
-    globals.maxImgSizes___69180 = (maxImgSizes_inline__P69179);
+    globals._pos2idx___73268 = (_pos2idx_inline__P73267);
+    globals.isEmptyImage___73279 = (isEmptyImage_inline__P73278);
+    globals.maxImgSizes___73481 = (maxImgSizes_inline__P73480);
     r0 = undefined;
     return leave(s, r0)
   default: oops()
 } } }
-_main___P69803.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
-_main___P69803.continuations = [  ]
+_main___P74302.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
+_main___P74302.continuations = [  ]
 
-function _main___P69803_mk(s) {
+function _main___P74302_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: _main___P69803, depth: s.depth + 1,
+        parent: s, fn: _main___P74302, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   tmp_1: undefined,
@@ -1380,7 +1380,7 @@ function gameOverConfig_inline__P4958_mk(s) {
 
 
 
-function _pos2idx_inline__P68965(s) {
+function _pos2idx_inline__P73267(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -1402,12 +1402,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-_pos2idx_inline__P68965.info = {"start":107,"length":54,"line":6,"column":28,"endLine":6,"endColumn":82,"fileName":"main.ts","functionName":"inline","argumentNames":["a","amax","b"]}
+_pos2idx_inline__P73267.info = {"start":107,"length":54,"line":6,"column":28,"endLine":6,"endColumn":82,"fileName":"main.ts","functionName":"inline","argumentNames":["a","amax","b"]}
 
-function _pos2idx_inline__P68965_mk(s) {
+function _pos2idx_inline__P73267_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: _pos2idx_inline__P68965, depth: s.depth + 1,
+        parent: s, fn: _pos2idx_inline__P73267, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
@@ -1419,7 +1419,7 @@ function _pos2idx_inline__P68965_mk(s) {
 
 
 
-function isEmptyImage_inline__P68976(s) {
+function isEmptyImage_inline__P73278(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -1444,12 +1444,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-isEmptyImage_inline__P68976.info = {"start":195,"length":63,"line":7,"column":32,"endLine":7,"endColumn":95,"fileName":"main.ts","functionName":"inline","argumentNames":["img"]}
+isEmptyImage_inline__P73278.info = {"start":195,"length":63,"line":7,"column":32,"endLine":7,"endColumn":95,"fileName":"main.ts","functionName":"inline","argumentNames":["img"]}
 
-function isEmptyImage_inline__P68976_mk(s) {
+function isEmptyImage_inline__P73278_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: isEmptyImage_inline__P68976, depth: s.depth + 1,
+        parent: s, fn: isEmptyImage_inline__P73278, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   tmp_1: undefined,
@@ -1462,7 +1462,7 @@ function isEmptyImage_inline__P68976_mk(s) {
 
 
 
-function maxImgSizes_inline__P69179(s) {
+function maxImgSizes_inline__P73480(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -1472,10 +1472,10 @@ if (yieldSteps-- < 0 && maybeYield(s, step, r0) || runtime !== pxsim.runtime) re
 switch (step) {
   case 0:
 
-    s.cur___69182 = undefined;
-    s.img___69189 = undefined;
-    s.unnamed818___U2 = undefined;
-    s.unnamed819___U3 = undefined;
+    s.cur___73483 = undefined;
+    s.img___73490 = undefined;
+    s.unnamed950___U2 = undefined;
+    s.unnamed951___U3 = undefined;
     if (s.lambdaArgs) {
       s.arg0 = (s.lambdaArgs[0]);
       s.lambdaArgs = null;
@@ -1494,23 +1494,23 @@ switch (step) {
     r0 = pxsim_pxtrt.mapSetByString(s.tmp_0, "height", s.tmp_3);
     r0 = pxsim_pxtrt.mapSetByString(s.tmp_0, "area", 0);
     r0 = pxsim_pxtrt.mapSetByString(s.tmp_0, "empty", 0);
-    s.cur___69182 = (s.tmp_0);
-    s.img___69189 = (undefined);
-    s.unnamed818___U2 = (s.arg0);
-    s.unnamed819___U3 = (0);
+    s.cur___73483 = (s.tmp_0);
+    s.img___73490 = (undefined);
+    s.unnamed950___U2 = (s.arg0);
+    s.unnamed951___U3 = (0);
   case 1:
-    s.tmp_0 = r0 = s.unnamed819___U3;
-    r0 = pxsim_Array__length(s.unnamed818___U2);
+    s.tmp_0 = r0 = s.unnamed951___U3;
+    r0 = pxsim_Array__length(s.unnamed950___U2);
     s.tmp_1 = r0;
     r0 = (s.tmp_0 < s.tmp_1);
     if (!r0) { step = 4; continue; }
-    r0 = pxsim_Array__getAt(s.unnamed818___U2, s.unnamed819___U3);
-    s.img___69189 = (r0);
+    r0 = pxsim_Array__getAt(s.unnamed950___U2, s.unnamed951___U3);
+    s.img___73490 = (r0);
     s.tmp_2 = if_width_2_mk(s);
-    s.tmp_2.arg0 = s.cur___69182;
+    s.tmp_2.arg0 = s.cur___73483;
     s.tmp_3 = Math_max__P130_mk(s);
     s.tmp_4 = if_width_1_mk(s);
-    s.tmp_4.arg0 = s.cur___69182;
+    s.tmp_4.arg0 = s.cur___73483;
     if (!s.tmp_4.arg0.vtable.iface) {
       s.retval = pxsim_pxtrt.mapGetByString(s.tmp_4.arg0, "width");
     } else {
@@ -1522,7 +1522,7 @@ switch (step) {
   case 7:
     r0 = s.retval;
     s.tmp_3.arg0 = r0;
-    r0 = pxsim_ImageMethods.width(s.img___69189);
+    r0 = pxsim_ImageMethods.width(s.img___73490);
     s.tmp_3.arg1 = r0;
     s.callLocIdx = 64; s.pc = 6; return s.tmp_3;
   case 6:
@@ -1539,10 +1539,10 @@ switch (step) {
   case 5:
     r0 = s.retval;
     s.tmp_5 = if_height_2_mk(s);
-    s.tmp_5.arg0 = s.cur___69182;
+    s.tmp_5.arg0 = s.cur___73483;
     s.tmp_7 = Math_max__P130_mk(s);
     s.tmp_8 = if_height_1_mk(s);
-    s.tmp_8.arg0 = s.cur___69182;
+    s.tmp_8.arg0 = s.cur___73483;
     if (!s.tmp_8.arg0.vtable.iface) {
       s.retval = pxsim_pxtrt.mapGetByString(s.tmp_8.arg0, "height");
     } else {
@@ -1554,7 +1554,7 @@ switch (step) {
   case 10:
     r0 = s.retval;
     s.tmp_7.arg0 = r0;
-    r0 = pxsim_ImageMethods.height(s.img___69189);
+    r0 = pxsim_ImageMethods.height(s.img___73490);
     s.tmp_7.arg1 = r0;
     s.callLocIdx = 67; s.pc = 9; return s.tmp_7;
   case 9:
@@ -1573,8 +1573,8 @@ switch (step) {
     r0 = s.retval;
     r0 = s.tmp_6;
     s.tmp_1 = lambda_2_mk(s);
-    s.tmp_1.argL = globals.isEmptyImage___68977;
-    s.tmp_1.arg0 = s.img___69189;
+    s.tmp_1.argL = globals.isEmptyImage___73279;
+    s.tmp_1.arg0 = s.img___73490;
     setupLambda(s.tmp_1, s.tmp_1.argL);
     s.callLocIdx = 69; s.pc = 11; return s.tmp_1;
   case 11:
@@ -1583,7 +1583,7 @@ switch (step) {
     r0 = pxsim_numops_toBoolDecr(s.tmp_0);
     if (!r0) { step = 2; continue; }
     s.tmp_2 = if_empty_2_mk(s);
-    s.tmp_3 = r0 = s.cur___69182;
+    s.tmp_3 = r0 = s.cur___73483;
     s.tmp_2.arg0 = r0;
     s.tmp_5 = if_empty_1_mk(s);
     s.tmp_5.arg0 = s.tmp_3;
@@ -1612,15 +1612,15 @@ switch (step) {
     r0 = s.retval;
   case 2:
   case 3:
-    r0 = (s.unnamed819___U3 + 1);
-    s.unnamed819___U3 = (r0);
+    r0 = (s.unnamed951___U3 + 1);
+    s.unnamed951___U3 = (r0);
     { step = 1; continue; }
   case 4:
-    s.unnamed818___U2 = (undefined);
+    s.unnamed950___U2 = (undefined);
     s.tmp_0 = if_area_2_mk(s);
-    s.tmp_0.arg0 = s.cur___69182;
+    s.tmp_0.arg0 = s.cur___73483;
     s.tmp_2 = if_width_1_mk(s);
-    s.tmp_2.arg0 = s.cur___69182;
+    s.tmp_2.arg0 = s.cur___73483;
     if (!s.tmp_2.arg0.vtable.iface) {
       s.retval = pxsim_pxtrt.mapGetByString(s.tmp_2.arg0, "width");
     } else {
@@ -1633,7 +1633,7 @@ switch (step) {
     r0 = s.retval;
     s.tmp_1 = r0;
     s.tmp_4 = if_height_1_mk(s);
-    s.tmp_4.arg0 = s.cur___69182;
+    s.tmp_4.arg0 = s.cur___73483;
     if (!s.tmp_4.arg0.vtable.iface) {
       s.retval = pxsim_pxtrt.mapGetByString(s.tmp_4.arg0, "height");
     } else {
@@ -1657,16 +1657,16 @@ switch (step) {
     }
   case 14:
     r0 = s.retval;
-    r0 = s.cur___69182;
+    r0 = s.cur___73483;
     return leave(s, r0)
   default: oops()
 } } }
-maxImgSizes_inline__P69179.info = {"start":2157,"length":384,"line":54,"column":24,"endLine":63,"endColumn":5,"fileName":"main.ts","functionName":"inline","argumentNames":["imgs"]}
+maxImgSizes_inline__P73480.info = {"start":2155,"length":384,"line":54,"column":24,"endLine":63,"endColumn":5,"fileName":"main.ts","functionName":"inline","argumentNames":["imgs"]}
 
-function maxImgSizes_inline__P69179_mk(s) {
+function maxImgSizes_inline__P73480_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: maxImgSizes_inline__P69179, depth: s.depth + 1,
+        parent: s, fn: maxImgSizes_inline__P73480, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   tmp_1: undefined,
@@ -1677,10 +1677,10 @@ function maxImgSizes_inline__P69179_mk(s) {
   tmp_6: undefined,
   tmp_7: undefined,
   tmp_8: undefined,
-  cur___69182: undefined,
-  img___69189: undefined,
-  unnamed818___U2: undefined,
-  unnamed819___U3: undefined,
+  cur___73483: undefined,
+  img___73490: undefined,
+  unnamed950___U2: undefined,
+  unnamed951___U3: undefined,
   arg0: undefined,
 } }
 
@@ -42443,7 +42443,7 @@ const sprites_BaseSpriteSayRenderer__C2273_VT = mkVTable({
   },
 });
 
-const breakpoints = setupDebugger(1, ["_pos2idx___68966","isEmptyImage___68977","maxImgSizes___69180"])
+const breakpoints = setupDebugger(1, ["_pos2idx___73268","isEmptyImage___73279","maxImgSizes___73481"])
 
-return _main___P69803
+return _main___P74302
 })
