@@ -7,6 +7,21 @@ namespace FxImage {
     export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b;
     export const isEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
 
+    export function widthOf(fximg: Buffer) {
+        if (fximg.length < 5) return 0;
+        return fximg.getNumber(NumberFormat.UInt8LE, 2);
+    }
+    export function heightOf(fximg: Buffer) {
+        if (fximg.length < 5) return 0;
+        return fximg.getNumber(NumberFormat.UInt8LE, 0);
+    }
+    export function dimensionOf(fximg: Buffer, d: image.Dimension) {
+        switch (d) {
+            case image.Dimension.Width: return widthOf(fximg);
+            case image.Dimension.Height: return heightOf(fximg);
+        } return 0;
+    }
+
     export function create(width: number, height: number): Buffer {
         const fximg = pins.createBuffer(4 + ((1 + (width * height)) >>> 1))
         fximg.setNumber(NumberFormat.UInt16LE, 0, height);
@@ -166,123 +181,386 @@ namespace FxImage {
             fximg[ih4] = (i & 1) ? (src[y] << 4) | (fximg[ih4] & NIB_MASK1) : (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
         }
     }
+
+    // Helper: clip ค่าให้อยู่ในช่วง
+    function clip(v: number, minv: number, maxv: number): number {
+        return v < minv ? minv : (v > maxv ? maxv : v);
+    }
+
+    // 1. drawLine (Bresenham ปรับปรุงตามที่ภัทรแนะนำ - ใช้ sx/sy ตรวจทิศทาง ไม่เช็คจุดเริ่ม=จุดจบ)
+    export function drawLine(fximg: Buffer, x0: number, y0: number, x1: number, y1: number, color: number) {
+        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        color &= 0xF;
+
+        let dx = Math.abs(x1 - x0);
+        let dy = Math.abs(y1 - y0);
+        let sx = x0 < x1 ? 1 : -1;
+        let sy = y0 < y1 ? 1 : -1;
+        let err = dx - dy;
+
+        while (1) {
+            if (x0 >= 0 && x0 < w && y0 >= 0 && y0 < h)
+                setPixel(fximg, x0, y0, color);
+
+            // ตรวจทิศทาง + เกินจุดหมายหรือยัง (ป้องกัน overflow)
+            if (((sx > 0 && x0 >= x1) || (sx < 0 && x0 <= x1))
+                || ((sy > 0 && y0 >= y1) || (sy < 0 && y0 <= y1))) break;
+
+            let e2 = err << 1;
+            if (e2 > -dy) { err -= dy; x0 += sx; }
+            if (e2 < dx) { err += dx; y0 += sy; }
+        }
+    }
+
+    // 2. drawRect (ขอบ)
+    export function drawRect(fximg: Buffer, x: number, y: number, width: number, height: number, color: number) {
+        if (width < 1 || height < 1) return;
+        drawLine(fximg, x, y, x + width - 1, y, color);
+        drawLine(fximg, x + width - 1, y, x + width - 1, y + height - 1, color);
+        drawLine(fximg, x + width - 1, y + height - 1, x, y + height - 1, color);
+        drawLine(fximg, x, y + height - 1, x, y, color);
+    }
+
+    // 3. fillRect (เติมเต็ม)
+    export function fillRect(fximg: Buffer, x: number, y: number, width: number, height: number, color: number) {
+        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        if (width < 1 || height < 1) return;
+        color &= 0xF;
+
+        const sx = clip(x, 0, w - 1);
+        const ex = clip(x + width - 1, 0, w - 1);
+        const sy = clip(y, 0, h - 1);
+        const ey = clip(y + height - 1, 0, h - 1);
+        if (sx > ex || sy > ey) return;
+
+        const rowBuf = pins.createBuffer(h);
+        for (let cx = sx; cx <= ex; cx++) {
+            getRow(fximg, cx, rowBuf, h);
+            for (let cy = sy; cy <= ey; cy++) {
+                rowBuf[cy] = color;
+            }
+            setRow(fximg, cx, rowBuf, h);
+        }
+    }
+
+    // 4. fill (เติมทั้งภาพ)
+    export function fill(fximg: Buffer, color: number) {
+        color &= 0xF;
+        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const rowBuf = pins.createBuffer(h);
+        rowBuf.fill(color);
+        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        for (let x = 0; x < w; x++) {
+            setRow(fximg, x, rowBuf, h);
+        }
+    }
+
+    // 5. replace (แทนที่สี)
+    export function replace(fximg: Buffer, fromColor: number, toColor: number) {
+        fromColor &= 0xF; toColor &= 0xF;
+        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const rowBuf = pins.createBuffer(h);
+        for (let x = 0; x < w; x++) {
+            getRow(fximg, x, rowBuf, h);
+            for (let y = 0; y < h; y++) {
+                if (rowBuf[y] === fromColor) rowBuf[y] = toColor;
+            }
+            setRow(fximg, x, rowBuf, h);
+        }
+    }
+
+    // 6. drawCircle (midpoint circle - integer)
+    export function drawCircle(fximg: Buffer, cx: number, cy: number, r: number, color: number) {
+        if (r < 1) return;
+        color &= 0xF;
+        let x = r;
+        let y = 0;
+        let err = 1 - 2 * r;
+
+        while (x >= y) {
+            setPixel(fximg, cx + x, cy + y, color);
+            setPixel(fximg, cx - x, cy + y, color);
+            setPixel(fximg, cx + x, cy - y, color);
+            setPixel(fximg, cx - x, cy - y, color);
+            setPixel(fximg, cx + y, cy + x, color);
+            setPixel(fximg, cx - y, cy + x, color);
+            setPixel(fximg, cx + y, cy - x, color);
+            setPixel(fximg, cx - y, cy - x, color);
+
+            y++;
+            if (err <= 0) {
+                err += 2 * y + 1;
+            } else {
+                x--;
+                err += 2 * (y - x) + 1;
+            }
+        }
+    }
+
+    // 7. fillCircle (ใช้ drawLine แนวนอน)
+    export function fillCircle(fximg: Buffer, cx: number, cy: number, r: number, color: number) {
+        if (r < 1) return;
+        color &= 0xF;
+        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        for (let dy = -r; dy <= r; dy++) {
+            let y = cy + dy;
+            if (y < 0 || y >= h) continue;
+            let dx = Math.sqrt(r * r - dy * dy) | 0;
+            drawLine(fximg, cx - dx, y, cx + dx, y, color);
+        }
+    }
+
+    // 8. drawOval (midpoint oval - integer)
+    export function drawOval(fximg: Buffer, cx: number, cy: number, rx: number, ry: number, color: number) {
+        if (rx < 1 || ry < 1) return;
+        color &= 0xF;
+        let x = rx;
+        let y = 0;
+        let err = 2 - 2 * rx;
+        let rx2 = rx * rx;
+        let ry2 = ry * ry;
+
+        while (x >= 0) {
+            setPixel(fximg, cx + x, cy + y, color);
+            setPixel(fximg, cx - x, cy + y, color);
+            setPixel(fximg, cx + x, cy - y, color);
+            setPixel(fximg, cx - x, cy - y, color);
+
+            y++;
+            let err2 = err + rx2 * (1 - 2 * y);
+            if (err2 <= 0) {
+                err = err2 + ry2 * (2 * x - 1);
+                x--;
+            } else {
+                err = err2;
+            }
+        }
+    }
+
+    // 9. fillOval
+    export function fillOval(fximg: Buffer, cx: number, cy: number, rx: number, ry: number, color: number) {
+        if (rx < 1 || ry < 1) return;
+        color &= 0xF;
+        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const ry2 = ry * ry;
+        for (let dy = -ry; dy <= ry; dy++) {
+            let y = cy + dy;
+            if (y < 0 || y >= h) continue;
+            let dx = Math.sqrt(rx * rx * (1 - (dy * dy / ry2))) | 0;
+            drawLine(fximg, cx - dx, y, cx + dx, y, color);
+        }
+    }
+
+    export function equalTo(fromFximg: Buffer, toFximg: Buffer) {
+        if (fromFximg.length < 5 || toFximg.length < 5) return false;
+        if (fromFximg.length !== toFximg.length) return false;
+        let count = toFximg.length - 4;
+        for (let n = 4; n < toFximg.length; n++) if (fromFximg[n] === toFximg[n]) count--;
+        if (count > 0) return false;
+        return true;
+    }
+
+    // 10. copyFrom (copy ทั้ง buffer ถ้าขนาดเท่ากัน)
+    export function copyFrom(fromFximg: Buffer, toFximg: Buffer) {
+        const len = Math.min(fromFximg.length, toFximg.length);
+        if (len < 5) return;
+        if (fromFximg.length !== toFximg.length) toFximg = create(fromFximg.getNumber(NumberFormat.UInt8LE, 2), fromFximg.getNumber(NumberFormat.UInt8LE, 0))
+        for (let i = 0; i < len; i++) {
+            toFximg[i] = fromFximg[i];
+        }
+    }
+
+    // 11. clone
+    export function clone(fximg: Buffer): Buffer {
+        return fximg.slice();
+    }
+
+    // 12. drawImage (ไม่ transparent)
+    export function drawImage(fromFximg: Buffer, toFximg: Buffer, dx: number, dy: number) {
+        _bulitDrawImage(fromFximg, toFximg, dx, dy, false);
+    }
+
+    // 13. drawTransparentImage (skip สี 0)
+    export function drawTransparentImage(fromFximg: Buffer, toFximg: Buffer, dx: number, dy: number) {
+        _bulitDrawImage(fromFximg, toFximg, dx, dy, true);
+    }
+
+    function _bulitDrawImage(fromFximg: Buffer, toFximg: Buffer, dx: number, dy: number, transparent: boolean) {
+        const sw = fromFximg.getNumber(NumberFormat.UInt16LE, 2);
+        const sh = fromFximg.getNumber(NumberFormat.UInt16LE, 0);
+        const tw = toFximg.getNumber(NumberFormat.UInt16LE, 2);
+        const th = toFximg.getNumber(NumberFormat.UInt16LE, 0);
+        
+        const rowSrc = pins.createBuffer(sh);
+        const rowDst = pins.createBuffer(th);
+        for (let sx = 0; sx < sw; sx++) {
+            let tx = dx + sx;
+            if (tx < 0 || tx >= tw) continue;
+
+            getRow(fromFximg, sx, rowSrc, sh);
+            getRow(toFximg, tx, rowDst, th);
+
+            for (let sy = 0; sy < sh; sy++) {
+                let ty = dy + sy;
+                if (ty < 0 && ty >= th) continue;
+                if (transparent && rowSrc[sy] < 1) continue;
+                rowDst[ty] = rowSrc[sy];
+            }
+            setRow(toFximg, tx, rowDst, th);
+        }
+    }
+
+    // 14. scale (nearest neighbor)
+    export function scale(fximg: Buffer, newWidth: number, newHeight: number): Buffer {
+        const ow = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        const oh = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const dst = create(newWidth, newHeight);
+        const dstRowBuf = pins.createBuffer(newHeight);
+        const fximgRowBuf = pins.createBuffer(oh);
+
+        for (let x = 0; x < newWidth; x++) {
+            let sx = Math.idiv(x * ow, newWidth);
+            getRow(fximg, sx, fximgRowBuf, oh);
+            for (let y = 0; y < newHeight; y++) {
+                let sy = Math.idiv(y * oh, newHeight);
+                dstRowBuf[y] = fximgRowBuf[sy]
+            }
+            setRow(dst, x, dstRowBuf, newHeight);
+        }
+        return dst;
+    }
+
+    // 15. rotate90 (n90 = 1,2,3 → 90°,180°,270°)
+    export function rotate90(fximg: Buffer, n90: number): Buffer {
+        n90 = n90 & 0x3;
+        if (n90 === 0) return clone(fximg);
+
+        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const nw = (n90 & 1) ? h : w;
+        const nh = (n90 & 1) ? w : h;
+        const dst = create(nw, nh);
+
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                let c = getPixel(fximg, x, y);
+                let nx: number, ny: number;
+                if (n90 === 1) { nx = y; ny = w - 1 - x; }
+                else if (n90 === 2) { nx = w - 1 - x; ny = h - 1 - y; }
+                else { nx = h - 1 - y; ny = x; }
+                setPixel(dst, nx, ny, c);
+            }
+        }
+        return dst;
+    }
+
+    // ค่า sin(theta * 2π / 256) * 127 (ประมาณ ±127) เพื่อให้เป็น int8-friendly
+    // แต่เก็บเป็น number (int16) เพื่อความแม่นยำในการคำนวณ
+    const sineTable: number[] = [
+        0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45,
+        48, 51, 54, 57, 59, 62, 65, 67, 70, 72, 75, 77, 80, 82, 84, 86,
+        88, 90, 92, 94, 96, 98, 99, 101, 102, 104, 105, 106, 108, 109, 110, 111,
+        112, 113, 114, 115, 115, 116, 117, 117, 118, 118, 119, 119, 119, 120, 120, 120,
+        120, 120, 120, 120, 119, 119, 119, 118, 118, 117, 117, 116, 115, 115, 114, 113,
+        112, 111, 110, 109, 108, 106, 105, 104, 102, 101, 99, 98, 96, 94, 92, 90,
+        88, 86, 84, 82, 80, 77, 75, 72, 70, 67, 65, 62, 59, 57, 54, 51,
+        48, 45, 42, 39, 36, 33, 30, 27, 24, 21, 18, 15, 12, 9, 6, 3,
+        0, -3, -6, -9, -12, -15, -18, -21, -24, -27, -30, -33, -36, -39, -42, -45,
+        -48, -51, -54, -57, -59, -62, -65, -67, -70, -72, -75, -77, -80, -82, -84, -86,
+        -88, -90, -92, -94, -96, -98, -99, -101, -102, -104, -105, -106, -108, -109, -110, -111,
+        -112, -113, -114, -115, -115, -116, -117, -117, -118, -118, -119, -119, -119, -120, -120, -120,
+        -120, -120, -120, -120, -119, -119, -119, -118, -118, -117, -117, -116, -115, -115, -114, -113,
+        -112, -111, -110, -109, -108, -106, -105, -104, -102, -101, -99, -98, -96, -94, -92, -90,
+        -88, -86, -84, -82, -80, -77, -75, -72, -70, -67, -65, -62, -59, -57, -54, -51,
+        -48, -45, -42, -39, -36, -33, -30, -27, -24, -21, -18, -15, -12, -9, -6, -3
+    ];
+
+    function iSin(theta: number): number {
+        return sineTable[theta & 0xFF];
+    }
+
+    function iCos(theta: number): number {
+        return sineTable[(theta + 64) & 0xFF];  // cos = sin + 90° (64 ใน 256)
+    }
+
+    function rotatedBounds(width: number, height: number, theta: number): number[] {
+        let s = Math.abs(iSin(theta));   // |sin| * 120
+        let c = Math.abs(iCos(theta));   // |cos| * 120
+
+        // newW ≈ (|cos| * w + |sin| * h) / 120 + 1 (เผื่อ margin)
+        let newW = Math.idiv(c * width + s * height, 120) + 1;
+        let newH = Math.idiv(s * width + c * height, 120) + 1;
+
+        // เพิ่ม margin เล็กน้อยเพื่อป้องกัน clipping จาก rounding
+        newW += 2;
+        newH += 2;
+
+        return [newW, newH];
+    }
+
+    // 16. rotate (theta 0-255 ด้วย sin/cos table)
+    export function rotate(fximg: Buffer, theta: number): Buffer {
+        const ow = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        const oh = fximg.getNumber(NumberFormat.UInt16LE, 0);
+
+        // หาขนาด bounding box ใหม่
+        const [nw, nh] = rotatedBounds(ow, oh, theta);
+
+        // สร้าง Buffer ใหม่ขนาดใหญ่ขึ้น
+        const dst = create(nw, nh);
+        //fill(dst, 0);  // พื้นหลังโปร่งใส (สี 0)
+
+        // จุดกึ่งกลางใหม่ (สำหรับวางภาพเก่าตรงกลาง)
+        const dstCx = nw >> 1;
+        const dstCy = nh >> 1;
+        const srcCx = ow >> 1;
+        const srcCy = oh >> 1;
+
+        const s = iSin(theta);
+        const c = iCos(theta);
+
+        // วาดทุกพิกเซลจาก dst → map กลับไป src (reverse rotation เพื่อ fill hole)
+        // หรือ forward จาก src → dst (แบบเดิม แต่ shift offset)
+        for (let dy = -dstCy; dy < nh - dstCy; dy++) {
+            for (let dx = -dstCx; dx < nw - dstCx; dx++) {
+                // dx, dy คือ offset จาก center ใหม่
+                let ox = Math.idiv(dx * c - dy * s, 120);
+                let oy = Math.idiv(dx * s + dy * c, 120);
+
+                let sx = ox + srcCx;
+                let sy = oy + srcCy;
+
+                if (sx < 0 || sx >= ow || sy < 0 || sy >= oh) continue;
+                let col = getPixel(fximg, sx, sy);
+                if (col < 1) continue;  // skip transparent
+                let tx = dx + dstCx;
+                let ty = dy + dstCy;
+                setPixel(dst, tx, ty, col);
+            }
+        }
+        return dst;
+    }
+
+    // 17. rotationFrame (สร้างหลายเฟรมหมุนเท่า ๆ กัน)
+    export function rotationFrame(fximg: Buffer, count: number): Buffer {
+        if (count < 1) count = 1;
+        const step = Math.idiv(256, count);
+        let w = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        let h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const [bw, bh] = rotatedBounds(w, h, 32);
+        const [bw2, bh2] = [bw << 1, bh << 1]
+        const bigBuf = createFrame(w + bw2, h + bh2, count);
+
+        let offset = 0;
+        for (let i = 0; i < count; i++) {
+            const [nw, nh] = rotatedBounds(w, h, i * step);
+            let frame = rotate(fximg, i * step);
+            drawTransparentImage(bigBuf, frame, offset + (bw - nw), bh - nh);
+            offset += w + bw2;
+        }
+        return bigBuf;
+    }
 }
-/* // test zone: animation
-scene.setBackgroundColor(1)
-const imgfxa = FxImage.fromImage(img`
-    . . . . . . b b b b . . . . . .
-    . . . . b b 3 3 3 3 b b . . . .
-    . . . c b 3 3 3 3 1 1 b c . . .
-    . . c b 3 3 3 3 3 1 1 1 b c . .
-    . c c 1 1 1 3 3 3 3 1 1 3 c c .
-    c c d 1 1 1 3 3 3 3 3 3 3 b c c
-    c b d d 1 3 3 3 3 3 1 1 1 b b c
-    c b b b 3 3 1 1 3 3 1 1 d d b c
-    c b b b b d d 1 1 3 b d d d b c
-    . c b b b b d d b b b b b b c .
-    . . c c b b b b b b b b c c . .
-    . . . . c c c c c c c c . . . .
-    . . . . . . b 1 1 b . . . . . .
-    . . . . . . b 1 1 b b . . . . .
-    . . . . . b b d 1 1 b . . . . .
-    . . . . . b d d 1 1 b . . . . .
-`)
-
-const imgfxas = FxImage.fromFrame([
-    img`
-        . . . . . . b b b b . . . . . .
-        . . . . b b 3 3 3 3 b b . . . .
-        . . . c b 3 3 3 3 1 1 b c . . .
-        . . c b 3 3 3 3 3 1 1 1 b c . .
-        . c c 1 1 1 3 3 3 3 1 1 3 c c .
-        c c d 1 1 1 3 3 3 3 3 3 3 b c c
-        c b d d 1 3 3 3 3 3 1 1 1 b b c
-        c b b b 3 3 1 1 3 3 1 1 d d b c
-        c b b b b d d 1 1 3 b d d d b c
-        . c b b b b d d b b b b b b c .
-        . . c c b b b b b b b b c c . .
-        . . . . c c c c c c c c . . . .
-        . . . . . . b 1 1 b . . . . . .
-        . . . . . . b 1 1 b b . . . . .
-        . . . . . b b d 1 1 b . . . . .
-        . . . . . b d d 1 1 b . . . . .
-    `,
-    img`
-        . . . . . . . . . . . . . . . .
-        . . . . . . . . . . . . . . . .
-        . . . . . . . . . . . . . . . .
-        . . . . . . b b b b . . . . . .
-        . . . . b b 3 3 3 3 b b . . . .
-        . . . c b 3 3 3 3 1 1 b c . . .
-        . . c b 3 3 3 3 3 1 1 1 b c . .
-        . c b 1 1 1 3 3 3 3 1 1 3 c c .
-        c b d 1 1 1 3 3 3 3 3 3 3 b b c
-        c b b d 1 3 3 3 3 3 1 1 1 b b c
-        c b b b 3 3 1 1 3 3 1 1 d d b c
-        . c b b b d d 1 1 3 b d d d c .
-        . . c c b b d d b b b b c c . .
-        . . . . c c c c c c c c . . . .
-        . . . . . b b d 1 1 b . . . . .
-        . . . . . b d d 1 1 b . . . . .
-    `
-])
-
-let mySprite = sprites.create(FxImage.toImage(imgfxa), SpriteKind.Player)
-
-animation.runImageAnimation(mySprite, FxImage.toFrame(imgfxas), 100, true)
-*/
-/* // test zone: mutitask test
-scene.setBackgroundColor(1)
-
-let mySpriteA = sprites.create(img`
-    4 4 4 . . 4 4 4 4 4 . . . . . .
-    4 5 5 4 4 5 5 5 5 5 4 4 . . . .
-    b 4 5 5 1 5 1 1 1 5 5 5 4 . . .
-    . b 5 5 5 5 1 1 5 5 1 1 5 4 . .
-    . b d 5 5 5 5 5 5 5 5 1 1 5 4 .
-    b 4 5 5 5 5 5 5 5 5 5 5 1 5 4 .
-    c d 5 5 5 5 5 5 5 5 5 5 5 5 5 4
-    c d 4 5 5 5 5 5 5 5 5 5 5 1 5 4
-    c 4 5 5 5 d 5 5 5 5 5 5 5 5 5 4
-    c 4 d 5 4 5 d 5 5 5 5 5 5 5 5 4
-    . c 4 5 5 5 5 d d d 5 5 5 5 5 b
-    . c 4 d 5 4 5 d 4 4 d 5 5 5 4 c
-    . . c 4 4 d 4 4 4 4 4 d d 5 d c
-    . . . c 4 4 4 4 4 4 4 4 5 5 5 4
-    . . . . c c b 4 4 4 b b 4 5 4 4
-    . . . . . . c c c c c c b b 4 .
-`, SpriteKind.Player)
-mySpriteA.x += 32
-let mySpriteB = sprites.create(img`
-    . . . . . . . e c 7 . . . . . .
-    . . . . e e e c 7 7 e e . . . .
-    . . c e e e e c 7 e 2 2 e e . .
-    . c e e e e e c 6 e e 2 2 2 e .
-    . c e e e 2 e c c 2 4 5 4 2 e .
-    c e e e 2 2 2 2 2 2 4 5 5 2 2 e
-    c e e 2 2 2 2 2 2 2 2 4 4 2 2 e
-    c e e 2 2 2 2 2 2 2 2 2 2 2 2 e
-    c e e 2 2 2 2 2 2 2 2 2 2 2 2 e
-    c e e 2 2 2 2 2 2 2 2 2 2 2 2 e
-    c e e 2 2 2 2 2 2 2 2 2 2 4 2 e
-    . e e e 2 2 2 2 2 2 2 2 2 4 e .
-    . 2 e e 2 2 2 2 2 2 2 2 4 2 e .
-    . . 2 e e 2 2 2 2 2 4 4 2 e . .
-    . . . 2 2 e e 4 4 4 2 e e . . .
-    . . . . . 2 2 e e e e . . . . .
-`, SpriteKind.Player)
-mySpriteB.x -= 32
-
-basic.forever(() => {
-    const imgfxa = FxImage.fromImage(mySpriteA.image)
-    mySpriteA.image.fill(0)
-    //basic.pause(20)
-    mySpriteA.setImage(FxImage.toImage(imgfxa))
-})
-basic.forever(() => {
-    const imgfxb = FxImage.fromImage(mySpriteB.image)
-    mySpriteB.image.fill(0)
-    //basic.pause(20)
-    mySpriteB.setImage(FxImage.toImage(imgfxb))
-})
-*/
