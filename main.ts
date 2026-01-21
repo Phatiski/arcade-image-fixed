@@ -1,8 +1,6 @@
 
 namespace FxImage {
 
-    let convertProcess = false;
-
     const NIB_MASK0 = 0xf0;
     const NIB_MASK1 = 0x0f;
 
@@ -34,8 +32,6 @@ namespace FxImage {
 
     export function fromImage(img: Image): Buffer {
         if (isEmptyImage(img)) return create(img.width, img.height);
-        if (convertProcess) return create(img.width, img.height);
-        convertProcess = true;
         const fximg = pins.createBuffer(4 + ((1 + (img.width * img.height)) >>> 1));
         fximg.setNumber(NumberFormat.UInt16LE, 0, img.height);
         fximg.setNumber(NumberFormat.UInt16LE, 2, img.width);
@@ -45,21 +41,17 @@ namespace FxImage {
             img.getRows(x, tbuf);
             setRow(fximg, x, tbuf, tmpn);
         }
-        convertProcess = false;
         return fximg;
     }
 
     export function toImage(fximg: Buffer): Image {
         const img = image.create(fximg.getNumber(NumberFormat.UInt16LE, 2), fximg.getNumber(NumberFormat.UInt16LE, 0));
-        if (convertProcess) return img;
-        convertProcess = true;
         const tmpn = img.height;
         const tbuf = pins.createBuffer(tmpn);
         for (let x = 0; x < img.width; x++) {
             getRow(fximg, x, tbuf, tmpn);
             img.setRows(x, tbuf);
         }
-        convertProcess = false;
         return img;
     }
 
@@ -77,8 +69,6 @@ namespace FxImage {
     export function fromFrame(imgs: Image[]) {
         const allSize = maxImgSizes(imgs);
         if (allSize.empty >= imgs.length) return createFrame(allSize.width, allSize.height, imgs.length);
-        if (convertProcess) return createFrame(allSize.width, allSize.height, imgs.length);
-        convertProcess = true;
         const fximgs = pins.createBuffer(4 + ((1 + (allSize.area * imgs.length)) >> 1));
         fximgs.setNumber(NumberFormat.UInt16LE, 0, allSize.height);
         fximgs.setNumber(NumberFormat.UInt16LE, 2, allSize.width);
@@ -92,15 +82,12 @@ namespace FxImage {
             }
             nw += allSize.width
         }
-        convertProcess = false;
         return fximgs;
     }
 
     export function toFrame(fximgs: Buffer) {
         const imgs: Image[] = []
         const img = image.create(fximgs.getNumber(NumberFormat.UInt16LE, 2), fximgs.getNumber(NumberFormat.UInt16LE, 0));
-        if (convertProcess) return imgs.fill(img.clone(), 0, frameCount(fximgs));
-        convertProcess = true;
         const tmpn = img.height;
         const tbuf = pins.createBuffer(tmpn);
         for (let nw = 0; (((1 + (nw * img.height)) >> 1) + 4) < fximgs.length; nw += img.width) {
@@ -110,7 +97,6 @@ namespace FxImage {
             }
             imgs.push(img.clone())
         }
-        convertProcess = false;
         return imgs;
     }
 
