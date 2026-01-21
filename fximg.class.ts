@@ -20,19 +20,22 @@ class FxImg {
     protected data: Buffer;
     protected _width: uint16;
     protected _height: uint16;
+    protected _length: uint16;
 
     get width() { return this._width }
     get height() { return this._height }
+    get length() { return this._length }
 
-    protected sizeInit(width: number, height: number) {
+    protected sizeInit(width: number, height: number, length?: number) {
         this._width = width;
         this._height = height;
+        this._length = length ? length : 1;
     }
 
     protected create(width: number, height: number, length?: number) {
         if (!length) length = 1;
         this.data = pins.createBuffer((1 + (width * height * length)) >>> 1);
-        this.sizeInit(width, height)
+        this.sizeInit(width, height, length)
     }
 
     set image(img: Image) {
