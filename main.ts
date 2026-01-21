@@ -23,8 +23,8 @@ namespace FxImage {
 
     export function frameCount(fximgs: Buffer): number {
         if (fximgs.length < 1) return NaN;
-        const invarea = 1 / ((1 + (fximgs.getNumber(NumberFormat.UInt16LE, 2) * fximgs.getNumber(NumberFormat.UInt16LE, 0))) >> 1);
-        return ((fximgs.length - 4) * invarea) | 0;
+        const area = ((1 + (fximgs.getNumber(NumberFormat.UInt16LE, 2) * fximgs.getNumber(NumberFormat.UInt16LE, 0))) >> 1);
+        return Math.idiv(fximgs.length - 4, area);
     }
 
     export function fromImage(img: Image): Buffer {
