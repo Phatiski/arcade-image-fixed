@@ -1,5 +1,5 @@
 
-namespace FxImage {
+namespace fximage {
 
     const NIB_MASK0 = 0xf0;
     const NIB_MASK1 = 0x0f;
@@ -133,30 +133,6 @@ namespace FxImage {
         return (i & 1 ? curv & 0xf : curv >>> 4)
     }
 
-    export function getRow(fximg: Buffer, x: number, dst: Buffer, tmpn?: number) {
-        const h0 = tmpn ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0);
-        const len = Math.min(dst.length, h0);
-        if (len < 1) return;
-        let i = x * h0,
-            y = 0;
-        if (i & 1) {
-            const ih4 = (i >>> 1) + 4;
-            dst[y] = fximg[ih4] & NIB_MASK1;
-            i++, y++;
-        }
-        for (;y < len - 1; y += 2) {
-            const ih4 = (i >>> 1) + 4;
-            const val = fximg[ih4];
-            dst[y + 1] = val & NIB_MASK1;
-            dst[y] = val >>> 4;
-            i += 2;
-        }
-        if (y < len) {
-            const ih4 = (i >>> 1) + 4;
-            dst[y] = (i & 1) ? (fximg[ih4] & NIB_MASK1) : (fximg[ih4] >>> 4);
-        }
-    }
-
     export function setRow(fximg: Buffer, x: number, src: Buffer, tmpn?: number) {
         const h0 = tmpn ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0)
         const len = Math.min(src.length, h0);
@@ -179,6 +155,30 @@ namespace FxImage {
             src[y] &= 0xf;
             const ih4 = (i >>> 1) + 4;
             fximg[ih4] = (i & 1) ? (src[y] << 4) | (fximg[ih4] & NIB_MASK1) : (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
+        }
+    }
+
+    export function getRow(fximg: Buffer, x: number, dst: Buffer, tmpn?: number) {
+        const h0 = tmpn ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const len = Math.min(dst.length, h0);
+        if (len < 1) return;
+        let i = x * h0,
+            y = 0;
+        if (i & 1) {
+            const ih4 = (i >>> 1) + 4;
+            dst[y] = fximg[ih4] & NIB_MASK1;
+            i++, y++;
+        }
+        for (; y < len - 1; y += 2) {
+            const ih4 = (i >>> 1) + 4;
+            const val = fximg[ih4];
+            dst[y + 1] = val & NIB_MASK1;
+            dst[y] = val >>> 4;
+            i += 2;
+        }
+        if (y < len) {
+            const ih4 = (i >>> 1) + 4;
+            dst[y] = (i & 1) ? (fximg[ih4] & NIB_MASK1) : (fximg[ih4] >>> 4);
         }
     }
 
@@ -371,7 +371,7 @@ namespace FxImage {
         const buf = pins.createBuffer(h);
         for (let i = 0; i < w; i++) {
             getRow(fromFximg, i, buf, h);
-            setRow(toFximg, i, buf, h);
+            setRow(toFximg, i, buf, h)
         }
     }
 

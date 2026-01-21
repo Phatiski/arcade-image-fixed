@@ -9,7 +9,8 @@
         "main.blocks",
         "main.ts",
         "README.md",
-        "assets.json"
+        "assets.json",
+        "fximg.class.ts"
     ],
     "testFiles": [
         "test.ts"
