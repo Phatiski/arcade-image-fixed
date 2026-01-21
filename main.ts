@@ -75,7 +75,7 @@ namespace FxImage {
         for (const img of imgs) {
             for (let x = 0; x < img.width; x++) {
                 img.getRows(x, tbuf);
-                setRow(fximgs, nw + x, tbuf)
+                setRow(fximgs, nw + x, tbuf, tmpn)
             }
             nw += allSize.width
         }
@@ -89,7 +89,7 @@ namespace FxImage {
         const tbuf = pins.createBuffer(tmpn);
         for (let nw = 0; (((1 + (nw * img.height)) >> 1) + 4) < fximgs.length; nw += img.width) {
             for (let x = 0; x < img.width; x++) {
-                getRow(fximgs, nw + x, tbuf);
+                getRow(fximgs, nw + x, tbuf, tmpn);
                 img.setRows(x, tbuf);
             }
             imgs.push(img.clone())
