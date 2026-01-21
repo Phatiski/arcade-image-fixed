@@ -558,9 +558,42 @@ namespace FxImage {
         for (let i = 0; i < count; i++) {
             const [nw, nh] = rotatedBounds(w, h, i * step);
             let frame = rotate(fximg, i * step);
-            drawTransparentImage(bigBuf, frame, offset + (bw - nw), bh - nh);
+            drawTransparentImage(bigBuf, frame, offset + Math.abs(bw - nw), Math.abs(bh - nh));
             offset += w + bw2;
         }
         return bigBuf;
+    }
+
+    // Optional: trim ขอบโปร่งใส (สี 0) ออกให้เหลือเฉพาะส่วนที่มีเนื้อหา
+    export function trim(fximg: Buffer): Buffer {
+        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+
+        let minX = w, maxX = -1;
+        let minY = h, maxY = -1;
+
+        for (let x = 0; x < w; x++) {
+            for (let y = 0; y < h; y++) {
+                if (getPixel(fximg, x, y) !== 0) {
+                    minX = Math.min(minX, x);
+                    maxX = Math.max(maxX, x);
+                    minY = Math.min(minY, y);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+        }
+
+        if (maxX < minX) return create(1, 1);  // ว่าง
+
+        const newW = maxX - minX + 1;
+        const newH = maxY - minY + 1;
+        const trimmed = create(newW, newH);
+
+        for (let y = minY; y <= maxY; y++) {
+            for (let x = minX; x <= maxX; x++) {
+                setPixel(trimmed, x - minX, y - minY, getPixel(fximg, x, y));
+            }
+        }
+        return trimmed;
     }
 }
