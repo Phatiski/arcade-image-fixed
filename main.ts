@@ -49,7 +49,7 @@ namespace FxImage {
             getRow(fximg, x, tbuf, tmpn);
             img.setRows(x, tbuf);
         }
-        return img;
+        return img.clone();
     }
 
     const maxImgSizes = (imgs: Image[]) => {
@@ -94,7 +94,7 @@ namespace FxImage {
             }
             imgs.push(img.clone())
         }
-        return imgs;
+        return imgs.slice();
     }
 
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
