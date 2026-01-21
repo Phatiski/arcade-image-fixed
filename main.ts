@@ -22,7 +22,7 @@ namespace FxImage {
     }
 
     export function frameCount(fximgs: Buffer): number {
-        if (fximgs.length < 1) return NaN;
+        if (fximgs.length < 5) return 0;
         const area = ((1 + (fximgs.getNumber(NumberFormat.UInt16LE, 2) * fximgs.getNumber(NumberFormat.UInt16LE, 0))) >> 1);
         return Math.idiv(fximgs.length - 4, area);
     }
