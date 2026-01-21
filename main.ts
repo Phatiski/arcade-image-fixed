@@ -1,11 +1,12 @@
 
 namespace FxImage {
 
-    let tmpn: number, tmpn_: number, tbuf: Buffer;
     let convertProcess = false;
 
     const NIB_MASK0 = 0xf0;
     const NIB_MASK1 = 0x0f;
+
+    const clampIf16 = (x: number) => x < 0x0 || x > 0xf;
 
     export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b;
 
@@ -38,14 +39,13 @@ namespace FxImage {
         const fximg = pins.createBuffer(4 + ((1 + (img.width * img.height)) >>> 1));
         fximg.setNumber(NumberFormat.UInt16LE, 0, img.height);
         fximg.setNumber(NumberFormat.UInt16LE, 2, img.width);
-        if (!tmpn || (tmpn !== img.height)) tmpn = img.height
-        if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
-        tmpn_ = tmpn;
+        const tmpn = img.height
+        const tbuf = pins.createBuffer(tmpn);
         for (let x = 0; x < img.width; x++) {
             img.getRows(x, tbuf);
-            setRow(fximg, x, tbuf);
+            setRow(fximg, x, tbuf, tmpn);
         }
-        tmpn_ = null; convertProcess = false;
+        convertProcess = false;
         return fximg;
     }
 
@@ -53,14 +53,13 @@ namespace FxImage {
         const img = image.create(fximg.getNumber(NumberFormat.UInt16LE, 2), fximg.getNumber(NumberFormat.UInt16LE, 0));
         if (convertProcess) return img;
         convertProcess = true;
-        if (!tmpn || (tmpn !== img.height)) tmpn = img.height;
-        if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
-        tmpn_ = tmpn;
+        const tmpn = img.height;
+        const tbuf = pins.createBuffer(tmpn);
         for (let x = 0; x < img.width; x++) {
-            getRow(fximg, x, tbuf);
+            getRow(fximg, x, tbuf, tmpn);
             img.setRows(x, tbuf);
         }
-        tmpn_ = null; convertProcess = false;
+        convertProcess = false;
         return img;
     }
 
@@ -83,9 +82,8 @@ namespace FxImage {
         const fximgs = pins.createBuffer(4 + ((1 + (allSize.area * imgs.length)) >> 1));
         fximgs.setNumber(NumberFormat.UInt16LE, 0, allSize.height);
         fximgs.setNumber(NumberFormat.UInt16LE, 2, allSize.width);
-        if (!tmpn || (tmpn !== allSize.height)) tmpn = allSize.height;
-        if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
-        tmpn_ = tmpn;
+        const tmpn = allSize.height;
+        const tbuf = pins.createBuffer(tmpn);
         let nw = 0;
         for (const img of imgs) {
             for (let x = 0; x < img.width; x++) {
@@ -94,7 +92,7 @@ namespace FxImage {
             }
             nw += allSize.width
         }
-        tmpn_ = null; convertProcess = false;
+        convertProcess = false;
         return fximgs;
     }
 
@@ -103,9 +101,8 @@ namespace FxImage {
         const img = image.create(fximgs.getNumber(NumberFormat.UInt16LE, 2), fximgs.getNumber(NumberFormat.UInt16LE, 0));
         if (convertProcess) return imgs.fill(img.clone(), 0, frameCount(fximgs));
         convertProcess = true;
-        if (!tmpn || (tmpn !== img.height)) tmpn = img.height;
-        if (!tbuf || (tbuf.length < tmpn)) tbuf = pins.createBuffer(tmpn);
-        tmpn_ = tmpn;
+        const tmpn = img.height;
+        const tbuf = pins.createBuffer(tmpn);
         for (let nw = 0; (((1 + (nw * img.height)) >> 1) + 4) < fximgs.length; nw += img.width) {
             for (let x = 0; x < img.width; x++) {
                 getRow(fximgs, nw + x, tbuf);
@@ -113,12 +110,12 @@ namespace FxImage {
             }
             imgs.push(img.clone())
         }
-        tmpn_ = null; convertProcess = false;
+        convertProcess = false;
         return imgs;
     }
 
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
-        if (c > 0xf || c < 0x0) c &= 0xf;
+        if (clampIf16(c)) c &= 0xf;
         const i = _pos2idx(x, fximg.getNumber(NumberFormat.UInt16LE, 0), y)
         const ih4 = (i >>> 1) + 4;
         const curv = fximg[ih4]
@@ -138,8 +135,8 @@ namespace FxImage {
         return (i & 1 ? curv & 0xf : curv >>> 4)
     }
 
-    export function getRow(fximg: Buffer, x: number, dst: Buffer) {
-        const h0 = tmpn_ ? tmpn_ : fximg.getNumber(NumberFormat.UInt16LE, 0);
+    export function getRow(fximg: Buffer, x: number, dst: Buffer, tmpn?: number) {
+        const h0 = tmpn ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0);
         const len = Math.min(dst.length, h0);
         if (len < 1) return;
         let i = x * h0,
@@ -162,26 +159,26 @@ namespace FxImage {
         }
     }
 
-    export function setRow(fximg: Buffer, x: number, src: Buffer) {
-        const h0 = tmpn_ ? tmpn_ : fximg.getNumber(NumberFormat.UInt16LE, 0)
+    export function setRow(fximg: Buffer, x: number, src: Buffer, tmpn?: number) {
+        const h0 = tmpn ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0)
         const len = Math.min(src.length, h0);
         if (len < 1) return;
         let i = x * h0,
             y = 0;
         if (i & 1) {
-            if (src[y] > 0xf || src[y] < 0x0) src[y] &= 0xf;
+            if (clampIf16(src[y])) src[y] &= 0xf;
             const ih4 = (i >>> 1) + 4;
             fximg[ih4] = (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
             i++, y++;
         }
         for (; y < len - 1; y += 2) {
-            if (src[y] > 0xf || src[y] < 0x0) src[y] &= 0xf; if (src[y + 1] > 0xf || src[y + 1] < 0x0) src[y + 1] &= 0xf;
+            if (clampIf16(src[y])) src[y] &= 0xf; if (clampIf16(src[y + 1])) src[y + 1] &= 0xf;
             const ih4 = (i >>> 1) + 4;
             fximg[ih4] = (src[y] << 4) | (src[y + 1] & NIB_MASK1);
             i += 2;
         }
         if (y < len) {
-            if (src[y] > 0xf || src[y] < 0x0) src[y] &= 0xf;
+            if (clampIf16(src[y])) src[y] &= 0xf;
             const ih4 = (i >>> 1) + 4;
             fximg[ih4] = (i & 1) ? (src[y] << 4) | (fximg[ih4] & NIB_MASK1) : (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
         }
