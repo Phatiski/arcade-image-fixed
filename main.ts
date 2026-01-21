@@ -365,11 +365,13 @@ namespace FxImage {
 
     // 10. copyFrom (copy ทั้ง buffer ถ้าขนาดเท่ากัน)
     export function copyFrom(fromFximg: Buffer, toFximg: Buffer) {
-        const len = Math.min(fromFximg.length, toFximg.length);
-        if (len < 5) return;
-        if (fromFximg.length !== toFximg.length) toFximg = create(fromFximg.getNumber(NumberFormat.UInt8LE, 2), fromFximg.getNumber(NumberFormat.UInt8LE, 0))
-        for (let i = 0; i < len; i++) {
-            toFximg[i] = fromFximg[i];
+        const w = Math.min(widthOf(fromFximg), widthOf(toFximg));
+        const h = Math.min(heightOf(fromFximg), heightOf(toFximg))
+        if (w < 1 || h < 1) return;
+        const buf = pins.createBuffer(h);
+        for (let i = 0; i < w; i++) {
+            getRow(fromFximg, i, buf, h);
+            setRow(toFximg, i, buf, h);
         }
     }
 
