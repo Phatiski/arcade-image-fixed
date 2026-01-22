@@ -1,12 +1,17 @@
+
 class FxImg {
-    readonly NIB_MASK0 = 0xf0;
-    readonly NIB_MASK1 = 0x0f;
 
-    static pos2idx = (a: number, ah: number, b: number) => (a * ah) + b
-    static isEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
-    static isEmptyFrame = (imgs: Image[]) => imgs.reduce((cur, img) => cur + (img.equals(image.create(img.width, img.height)) ? 1 : 0), 0)
+    private arred: boolean;
 
-    static maxImgSizes = (imgs: Image[]) => {
+    protected readonly NIB_MASK0 = 0xf0;
+    protected readonly NIB_MASK1 = 0x0f;
+
+    protected static readonly pos2idx = (a: number, ah: number, b: number): number => (a * ah) + b
+    protected static readonly isEmptyImage = (img: Image): boolean => img.equals(image.create(img.width, img.height));
+    protected static readonly isEmptyFrame = (imgs: Image[]): number => imgs.reduce((cur, img) => cur + (img.equals(image.create(img.width, img.height)) ? 1 : 0), 0);
+    protected static readonly clip = (v: number, minv: number, maxv: number): number => v < minv ? minv : (v > maxv ? maxv : v);
+
+    protected static readonly maxImgSizes = (imgs: Image[]) => {
         const cur = { width: imgs[0].width, height: imgs[0].height, area: 0, empty: 0 };
         for (const img of imgs) {
             cur.width = Math.max(cur.width, img.width),
@@ -17,19 +22,46 @@ class FxImg {
         return cur
     }
 
-    protected data: Buffer;
-    protected _width: uint16;
+    protected    data: Buffer;
+    protected  _width: uint16;
     protected _height: uint16;
     protected _length: uint16;
+    protected   _area: uint32;
 
-    get width() { return this._width }
-    get height() { return this._height }
-    get length() { return this._length }
+    get  width(): uint16 { return this._width;  }
+    get height(): uint16 { return this._height; }
+    get length(): uint16 { return this._length; }
+    get   area(): uint32 { return this._area;   }
+
+    protected isOutOfWidth(x: number):  boolean { return (x < 0 || x >= (this.width * this.length)); }
+    protected isOutOfHeight(y: number): boolean { return (y < 0 || y >= this.height ); }
+    protected isOutOfArea(x: number, y: number): boolean { return (this.isOutOfWidth(x) || this.isOutOfHeight(y)); }
+
+    protected tbuf: Buffer;
+    protected ubuf: Buffer;
+
+    protected expandBuffer(len: number) {
+        if (!this.tbuf) {
+            this.tbuf = pins.createBuffer(len);
+            return;
+        }
+        if (this.tbuf && (this.tbuf.length < len)) {
+            this.ubuf = pins.createBuffer(len)
+            this.ubuf.write(0, this.tbuf);
+            this.tbuf = this.ubuf.slice();
+            this.ubuf = null;
+        }
+    }
+    protected setW(x: number) { x &= 0xffff, this._width  = x; }
+    protected setH(x: number) { x &= 0xffff, this._height = x; }
+    protected setL(x: number) { x &= 0xffff, this._length = x; }
+    protected setA() { this._area = (this._width * this._height) & 0xffffffff; }
 
     protected sizeInit(width: number, height: number, length?: number) {
-        this._width = width;
-        this._height = height;
-        this._length = length ? length : 1;
+        this.setW(width);
+        this.setH(height);
+        this.setL(length ? length : 1);
+        this.setA();
     }
 
     protected create(width: number, height: number, length?: number) {
@@ -73,7 +105,7 @@ class FxImg {
         };
     }
 
-    get frame() {
+    get frame(): Image[] {
         const imgs: Image[] = [];
         const img = image.create(this.width, this.height);
         const tbuf = pins.createBuffer(img.height);
@@ -89,7 +121,11 @@ class FxImg {
 
     constructor(v: { width: number, height: number, length?: number }, imgs?: Image[], listed?: boolean) {
         if (imgs && imgs.length > 0) v.length = imgs.length;
-        else if (v.length) v.length = 1;
+        else if (!v.length) v.length = 1;
+        if (!imgs) {
+            this.create(v.width, v.height, v.length);
+            return;
+        }
         if (imgs) {
             if (listed || imgs.length > 1) this.frame = imgs;
             else this.image = imgs[0];
@@ -98,6 +134,7 @@ class FxImg {
     }
 
     setPixel(x: number, y: number, c: number) {
+        if (this.isOutOfArea(x, y)) return;
         c &= 0xf;
         const i = this.height;
         const ih4 = (i >>> 1);
@@ -110,7 +147,8 @@ class FxImg {
         this.data[ih4] = (nib1 << 4) + nib0;
     }
 
-    getPixel(x: number, y: number) {
+    getPixel(x: number, y: number): uint8 {
+        if (this.isOutOfArea(x, y)) return 0x0;
         const i = FxImg.pos2idx(x, this.height, y);
         const ih = i >>> 1;
         const ih4 = ih;
@@ -119,6 +157,7 @@ class FxImg {
     }
 
     setRow(x: number, src: Buffer) {
+        if (this.isOutOfWidth(x)) return;
         const len = Math.min(src.length, this.height);
         if (len < 1) return;
         let i = x * this.height,
@@ -142,7 +181,8 @@ class FxImg {
         }
     }
 
-    getRow(x: number, dst: Buffer) {
+    getRow(x: number, dst: Buffer): void {
+        if (this.isOutOfWidth(x)) return;
         const len = Math.min(dst.length, this.height);
         if (len < 1) return;
         let i = x * this.height,
@@ -163,5 +203,16 @@ class FxImg {
             const ih4 = (i >>> 1);
             dst[y] = (i & 1) ? (this.data[ih4] & this.NIB_MASK1) : (this.data[ih4] >>> 4);
         }
+    }
+
+    copyFrom(dstFximg: FxImg) {
+        dstFximg.sizeInit(this.width, this.height, this.length);
+        dstFximg.data = this.data.slice();
+    }
+
+    clone(): FxImg {
+        const dstFximg = new FxImg({ width: this.width, height: this.height, length: this.length });
+        this.data.write(0, dstFximg.data);
+        return dstFximg;
     }
 }

@@ -10,7 +10,8 @@
         "main.ts",
         "README.md",
         "assets.json",
-        "fximg.class.ts"
+        "fximg.class.ts",
+        "fximg.home.ts"
     ],
     "testFiles": [
         "test.ts"
