@@ -1,6 +1,9 @@
 
 class FxImg {
 
+    private _deleted: boolean = false;
+    get deleted() { return this._deleted; }
+
     protected static readonly sineTable: number[] = [
         0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45,
         48, 51, 54, 57, 59, 62, 65, 67, 70, 72, 75, 77, 80, 82, 84, 86,
@@ -175,7 +178,7 @@ class FxImg {
         return imgs.slice();
     }
 
-    constructor(v: { width: number, height: number, length?: number }, imgs?: Image[], listed?: boolean) {
+    init(v: { width: number, height: number, length?: number }, imgs?: Image[], listed?: boolean) {
         if (imgs && imgs.length > 0) v.length = imgs.length;
         else if (!v.length) v.length = 1;
         if (!imgs) {
@@ -189,7 +192,19 @@ class FxImg {
         } this.create(v.width, v.height, v.length);
     }
 
+    constructor(v: { width: number, height: number, length?: number }, imgs?: Image[], listed?: boolean) {
+        this.init({ width: v.width, height: v.height, length: v.length }, imgs, listed );
+    }
+
+    delete() {
+        if (this.deleted) return;
+        this._deleted = true;
+        this._width = null, this._height = null, this._length = null;
+        this.tbuf = null, this.ubuf = null, this.data = null;
+    }
+
     setPixel(x: number, y: number, color: number) {
+        if (this.deleted) return;
         if (this.isOutOfArea(x, y)) return;
         color &= 0xf;
         const i = this.height;
@@ -204,6 +219,7 @@ class FxImg {
     }
 
     getPixel(x: number, y: number): uint8 {
+        if (this.deleted) return 0x0;
         if (this.isOutOfArea(x, y)) return 0x0;
         const i = FxImg.pos2idx(x, this.height, y);
         const ih = i >>> 1;
@@ -213,6 +229,7 @@ class FxImg {
     }
 
     setRow(x: number, src: Buffer) {
+        if (this.deleted) return;
         if (this.isOutOfWidth(x)) return;
         const len = Math.min(src.length, this.height);
         if (len < 1) return;
@@ -238,6 +255,7 @@ class FxImg {
     }
 
     getRow(x: number, dst: Buffer): void {
+        if (this.deleted) return;
         if (this.isOutOfWidth(x)) return;
         const len = Math.min(dst.length, this.height);
         if (len < 1) return;
@@ -262,6 +280,7 @@ class FxImg {
     }
 
     equal(otherFximg: FxImg) {
+        if (this.deleted) return false;
         if (this.data.length < 1 || otherFximg.data.length < 1) return false;
         if (this.data.length !== otherFximg.data.length) return false;
         let count = this.data.length;
@@ -271,17 +290,20 @@ class FxImg {
     }
 
     copyFrom(otherFximg: FxImg) {
+        if (this.deleted) return;
         otherFximg.sizeInit(this.width, this.height, this.length);
         otherFximg.data = this.data.slice(0, otherFximg.data.length);
     }
 
     clone(): FxImg {
+        if (this.deleted) return null;
         const dstFximg = new FxImg({ width: this.width, height: this.height, length: this.length });
         dstFximg.data = this.data.slice(0, dstFximg.data.length);
         return dstFximg;
     }
 
     fill(color: number) {
+        if (this.deleted) return;
         color &= 0xF;
         const h = this.height;
         this.expandBuffer(h);
@@ -291,6 +313,7 @@ class FxImg {
     }
 
     replace(fromColor: number, toColor: number) {
+        if (this.deleted) return;
         fromColor &= 0xF; toColor &= 0xF;
         const w = this.width;
         const h = this.height;
@@ -305,6 +328,7 @@ class FxImg {
     }
 
     drawLine(x0: number, y0: number, x1: number, y1: number, color: number) {
+        if (this.deleted) return;
         const w = this.width;
         const h = this.height;
         color &= 0xF;
@@ -332,6 +356,7 @@ class FxImg {
     }
 
     drawRect(x: number, y: number, width: number, height: number, color: number) {
+        if (this.deleted) return;
         if (width < 1 || height < 1) return;
         this.drawLine(x, y, x + width - 1, y, color);
         this.drawLine(x + width - 1, y, x + width - 1, y + height - 1, color);
@@ -340,6 +365,7 @@ class FxImg {
     }
 
     fillRect(x: number, y: number, width: number, height: number, color: number) {
+        if (this.deleted) return;
         const w = this.width;
         const h = this.height;
         if (width < 1 || height < 1) return;
@@ -362,6 +388,7 @@ class FxImg {
     }
 
     drawCircle(cx: number, cy: number, r: number, color: number) {
+        if (this.deleted) return;
         if (r < 1) return;
         color &= 0xF;
         let x = r;
@@ -389,6 +416,7 @@ class FxImg {
     }
 
     fillCircle(cx: number, cy: number, r: number, color: number) {
+        if (this.deleted) return;
         if (r < 1) return;
         color &= 0xF;
         const h = this.height;
@@ -402,6 +430,7 @@ class FxImg {
     }
 
     drawOval(cx: number, cy: number, rx: number, ry: number, color: number) {
+        if (this.deleted) return;
         if (rx < 1 || ry < 1) return;
         if (rx === ry) { this.drawCircle(cx, cy, rx, color); return; }
         color &= 0xF;
@@ -429,6 +458,7 @@ class FxImg {
     }
 
     fillOval(cx: number, cy: number, rx: number, ry: number, color: number) {
+        if (this.deleted) return;
         if (rx < 1 || ry < 1) return;
         if (rx === ry) { this.fillCircle(cx, cy, rx, color); return; }
         color &= 0xF;
@@ -444,14 +474,17 @@ class FxImg {
     }
 
     drawImage(dstFximg: FxImg, dx: number, dy: number) {
+        if (this.deleted) return;
         this._bulitDrawImage(dstFximg, dx, dy, false);
     }
 
     drawTransparentImage(dstFximg: FxImg, dx: number, dy: number) {
+        if (this.deleted) return;
         this._bulitDrawImage(dstFximg, dx, dy, true);
     }
 
     trim(): FxImg {
+        if (this.deleted) return null;
         const w = this.width;
         const h = this.height;
 
@@ -481,6 +514,7 @@ class FxImg {
     }
 
     scale(width: number, height: number): FxImg {
+        if (this.deleted) return null;
         const ow = this.width;
         const oh = this.height;
         const dst = new FxImg({width, height});
@@ -500,6 +534,7 @@ class FxImg {
     }
 
     rotate90(n90: number): FxImg {
+        if (this.deleted) return null;
         n90 = n90 & 0x3;
         if (n90 === 0) return this.clone();
 
@@ -523,6 +558,7 @@ class FxImg {
     }
 
     rotate(theta: number): FxImg {
+        if (this.deleted) return null;
         const ow = this.width;
         const oh = this.height;
 
@@ -565,6 +601,7 @@ class FxImg {
     }
 
     rotationFrame(count: number): FxImg {
+        if (this.deleted) return null;
         if (count < 1) count = 1;
         const step = Math.idiv(256, count);
         let w = this.width;
