@@ -1,7 +1,43 @@
 
 class FxImg {
 
-    private arred: boolean;
+    protected static readonly sineTable: number[] = [
+        0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45,
+        48, 51, 54, 57, 59, 62, 65, 67, 70, 72, 75, 77, 80, 82, 84, 86,
+        88, 90, 92, 94, 96, 98, 99, 101, 102, 104, 105, 106, 108, 109, 110, 111,
+        112, 113, 114, 115, 115, 116, 117, 117, 118, 118, 119, 119, 119, 120, 120, 120,
+        120, 120, 120, 120, 119, 119, 119, 118, 118, 117, 117, 116, 115, 115, 114, 113,
+        112, 111, 110, 109, 108, 106, 105, 104, 102, 101, 99, 98, 96, 94, 92, 90,
+        88, 86, 84, 82, 80, 77, 75, 72, 70, 67, 65, 62, 59, 57, 54, 51,
+        48, 45, 42, 39, 36, 33, 30, 27, 24, 21, 18, 15, 12, 9, 6, 3,
+        0, -3, -6, -9, -12, -15, -18, -21, -24, -27, -30, -33, -36, -39, -42, -45,
+        -48, -51, -54, -57, -59, -62, -65, -67, -70, -72, -75, -77, -80, -82, -84, -86,
+        -88, -90, -92, -94, -96, -98, -99, -101, -102, -104, -105, -106, -108, -109, -110, -111,
+        -112, -113, -114, -115, -115, -116, -117, -117, -118, -118, -119, -119, -119, -120, -120, -120,
+        -120, -120, -120, -120, -119, -119, -119, -118, -118, -117, -117, -116, -115, -115, -114, -113,
+        -112, -111, -110, -109, -108, -106, -105, -104, -102, -101, -99, -98, -96, -94, -92, -90,
+        -88, -86, -84, -82, -80, -77, -75, -72, -70, -67, -65, -62, -59, -57, -54, -51,
+        -48, -45, -42, -39, -36, -33, -30, -27, -24, -21, -18, -15, -12, -9, -6, -3
+    ];
+
+    protected static readonly iSin = (theta: number): number => FxImg.sineTable[theta & 0xFF];
+
+    protected static readonly iCos = (theta: number): number => FxImg.sineTable[(theta + 64) & 0xFF];  // cos = sin + 90° (64 in 256)
+
+    protected static readonly rotatedBounds = (width: number, height: number, theta: number): number[] => {
+        let s = Math.abs(FxImg.iSin(theta));   // |sin| * 120
+        let c = Math.abs(FxImg.iCos(theta));   // |cos| * 120
+
+        // newW ≈ (|cos| * w + |sin| * h) / 120 + 1 (เผื่อ margin)
+        let newW = Math.idiv(c * width + s * height, 120) + 1;
+        let newH = Math.idiv(s * width + c * height, 120) + 1;
+
+        // เพิ่ม margin เล็กน้อยเพื่อป้องกัน clipping จาก rounding
+        newW += 2;
+        newH += 2;
+
+        return [newW, newH];
+    }
 
     protected readonly NIB_MASK0 = 0xf0;
     protected readonly NIB_MASK1 = 0x0f;
@@ -25,13 +61,11 @@ class FxImg {
     protected    data: Buffer;
     protected  _width: uint16;
     protected _height: uint16;
-    protected _length: uint16;
-    protected   _area: uint32;
+    protected _length: uint32;
 
     get  width(): uint16 { return this._width;  }
     get height(): uint16 { return this._height; }
-    get length(): uint16 { return this._length; }
-    get   area(): uint32 { return this._area;   }
+    get length(): uint32 { return this._length; }
 
     protected isOutOfWidth(x: number):  boolean { return (x < 0 || x >= (this.width * this.length)); }
     protected isOutOfHeight(y: number): boolean { return (y < 0 || y >= this.height ); }
@@ -41,51 +75,73 @@ class FxImg {
     protected ubuf: Buffer;
 
     protected expandBuffer(len: number) {
-        if (!this.tbuf) {
-            this.tbuf = pins.createBuffer(len);
-            return;
-        }
-        if (this.tbuf && (this.tbuf.length < len)) {
-            this.ubuf = pins.createBuffer(len)
-            this.ubuf.write(0, this.tbuf);
-            this.tbuf = this.ubuf.slice();
-            this.ubuf = null;
-        }
+        if (!this.tbuf) { this.tbuf = pins.createBuffer(len); return; }
+        if (this.tbuf && (this.tbuf.length >= len)) return;
+        this.ubuf = pins.createBuffer(len);
+        this.ubuf.write(0, this.tbuf);
+        this.tbuf = this.ubuf.slice();
+        this.ubuf = null;
     }
-    protected setW(x: number) { x &= 0xffff, this._width  = x; }
-    protected setH(x: number) { x &= 0xffff, this._height = x; }
-    protected setL(x: number) { x &= 0xffff, this._length = x; }
-    protected setA() { this._area = (this._width * this._height) & 0xffffffff; }
+    protected setW(x: number) { x &= 0xffff,     this._width  = x; }
+    protected setH(x: number) { x &= 0xffff,     this._height = x; }
+    protected setL(x: number) { x &= 0xffffffff, this._length = x; }
 
     protected sizeInit(width: number, height: number, length?: number) {
         this.setW(width);
         this.setH(height);
         this.setL(length ? length : 1);
-        this.setA();
     }
 
     protected create(width: number, height: number, length?: number) {
         if (!length) length = 1;
         this.data = pins.createBuffer((1 + (width * height * length)) >>> 1);
-        this.sizeInit(width, height, length)
+        this.sizeInit(width, height, length);
+        this.expandBuffer(this.height);
+    }
+
+    protected _bulitDrawImage(srcFximg: FxImg, dx: number, dy: number, transparent: boolean) {
+        const sw = this.width;
+        const sh = this.height;
+        const tw = srcFximg.width;
+        const th = srcFximg.height;
+    
+        const rowSrc = pins.createBuffer(sh);
+        const rowDst = pins.createBuffer(th);
+        for (let sx = 0; sx < sw; sx++) {
+            let tx = dx + sx;
+            if (tx < 0) continue;
+            if (tx >= tw) break;
+    
+            this.getRow(sx, rowSrc);
+            srcFximg.getRow(tx, rowDst);
+    
+            for (let sy = 0; sy < sh; sy++) {
+                let ty = dy + sy;
+                if (ty < 0) continue;
+                if (ty >= th) break;
+                if (transparent && rowSrc[sy] < 1) continue;
+                rowDst[ty] = rowSrc[sy];
+            }
+            this.setRow(tx, rowDst);
+        }
     }
 
     set image(img: Image) {
         this.create(img.width, img.height)
-        if (fximage.isEmptyImage(img)) return;
-        const tbuf = pins.createBuffer(img.height);
+        if (FxImg.isEmptyImage(img)) return;
+        this.expandBuffer(img.height);
         for (let x = 0; x < img.width; x++) {
-            img.getRows(x, tbuf);
-            this.setRow(x, tbuf);
+            img.getRows(x, this.tbuf);
+            this.setRow(x, this.tbuf);
         };
     }
 
     get image(): Image {
         const img = image.create(this.width, this.height);
-        const tbuf = pins.createBuffer(img.height);
+        this.expandBuffer(img.height);
         for (let x = 0; x < img.width; x++) {
-            this.getRow(x, tbuf);
-            img.setRows(x, tbuf);
+            this.getRow(x, this.tbuf);
+            img.setRows(x, this.tbuf);
         };
         return img.clone();
     }
@@ -94,12 +150,12 @@ class FxImg {
         const allSize = FxImg.maxImgSizes(imgs);
         this.create(allSize.width, allSize.height, imgs.length);
         if (allSize.empty >= imgs.length) return;
-        const tbuf = pins.createBuffer(allSize.height);
+        this.expandBuffer(allSize.height);
         let nw = 0;
         for (const img of imgs) {
             for (let x = 0; x < img.width; x++) {
-                img.getRows(x, tbuf);
-                this.setRow(nw + x, tbuf);
+                img.getRows(x, this.tbuf);
+                this.setRow(nw + x, this.tbuf);
             };
             nw += allSize.width
         };
@@ -108,11 +164,11 @@ class FxImg {
     get frame(): Image[] {
         const imgs: Image[] = [];
         const img = image.create(this.width, this.height);
-        const tbuf = pins.createBuffer(img.height);
+        this.expandBuffer(img.height)
         for (let nw = 0; ((1 + (nw * img.height)) >> 1) < this.data.length; nw += img.width) {
             for (let x = 0; x < img.width; x++) {
-                this.getRow(nw + x, tbuf);
-                img.setRows(x, tbuf);
+                this.getRow(nw + x, this.tbuf);
+                img.setRows(x, this.tbuf);
             };
             imgs.push(img.clone())
         };
@@ -133,17 +189,17 @@ class FxImg {
         } this.create(v.width, v.height, v.length);
     }
 
-    setPixel(x: number, y: number, c: number) {
+    setPixel(x: number, y: number, color: number) {
         if (this.isOutOfArea(x, y)) return;
-        c &= 0xf;
+        color &= 0xf;
         const i = this.height;
         const ih4 = (i >>> 1);
         const curv = this.data[ih4];
         let nib0 = curv & 0xf,
             nib1 = curv >>> 4;
-        if (i & 1 ? nib0 === c : nib1 === c) return;
-        if (i & 1) nib0 = c;
-        else nib1 = c;
+        if (i & 1 ? nib0 === color : nib1 === color) return;
+        if (i & 1) nib0 = color;
+        else nib1 = color;
         this.data[ih4] = (nib1 << 4) + nib0;
     }
 
@@ -205,14 +261,325 @@ class FxImg {
         }
     }
 
-    copyFrom(dstFximg: FxImg) {
-        dstFximg.sizeInit(this.width, this.height, this.length);
-        dstFximg.data = this.data.slice();
+    equal(otherFximg: FxImg) {
+        if (this.data.length < 1 || otherFximg.data.length < 1) return false;
+        if (this.data.length !== otherFximg.data.length) return false;
+        let count = this.data.length;
+        for (let n = this.data.length; n >= 0; n--) if (this.data[n] === otherFximg.data[n]) count = n;
+        if (count > 0) return false;
+        return true;
+    }
+
+    copyFrom(otherFximg: FxImg) {
+        otherFximg.sizeInit(this.width, this.height, this.length);
+        otherFximg.data = this.data.slice(0, otherFximg.data.length);
     }
 
     clone(): FxImg {
         const dstFximg = new FxImg({ width: this.width, height: this.height, length: this.length });
-        this.data.write(0, dstFximg.data);
+        dstFximg.data = this.data.slice(0, dstFximg.data.length);
         return dstFximg;
+    }
+
+    fill(color: number) {
+        color &= 0xF;
+        const h = this.height;
+        this.expandBuffer(h);
+        this.tbuf.fill(color, 0, h);
+        const w = this.width;
+        for (let x = 0; x < w; x++) this.setRow(x, this.tbuf);
+    }
+
+    replace(fromColor: number, toColor: number) {
+        fromColor &= 0xF; toColor &= 0xF;
+        const w = this.width;
+        const h = this.height;
+        this.expandBuffer(h)
+        for (let x = 0; x < w; x++) {
+            this.getRow(x, this.tbuf);
+            for (let y = 0; y < h; y++) {
+                if (this.tbuf[y] === fromColor) this.tbuf[y] = toColor;
+            }
+            this.setRow(x, this.tbuf);
+        }
+    }
+
+    drawLine(x0: number, y0: number, x1: number, y1: number, color: number) {
+        const w = this.width;
+        const h = this.height;
+        color &= 0xF;
+
+        let dx = Math.abs(x1 - x0);
+        let dy = Math.abs(y1 - y0);
+        let sx = x0 < x1 ? 1 : -1;
+        let sy = y0 < y1 ? 1 : -1;
+        let err = dx - dy;
+
+        while (1) {
+            if (x0 >= 0 && x0 < w && y0 >= 0 && y0 < h) this.setPixel(x0, y0, color);
+
+            // ตรวจทิศทาง + เกินจุดหมายหรือยัง (ป้องกัน overflow)
+            if (((sx > 0 && x0 >= x1) || (sx < 0 && x0 <= x1)) ||
+                ((sy > 0 && y0 >= y1) || (sy < 0 && y0 <= y1))) break;
+
+            let e2 = err << 1;
+            if (e2 > -dy) { err -= dy; x0 += sx; }
+            if (e2 < dx) { err += dx; y0 += sy; }
+
+            if (((sx > 0 && x0 >= w) || (sx < 0 && x0 < 0)) ||
+                ((sy > 0 && y0 >= h) || (sy < 0 && y0 < 0))) break;
+        }
+    }
+
+    drawRect(x: number, y: number, width: number, height: number, color: number) {
+        if (width < 1 || height < 1) return;
+        this.drawLine(x, y, x + width - 1, y, color);
+        this.drawLine(x + width - 1, y, x + width - 1, y + height - 1, color);
+        this.drawLine(x + width - 1, y + height - 1, x, y + height - 1, color);
+        this.drawLine(x, y + height - 1, x, y, color);
+    }
+
+    fillRect(x: number, y: number, width: number, height: number, color: number) {
+        const w = this.width;
+        const h = this.height;
+        if (width < 1 || height < 1) return;
+        color &= 0xF;
+
+        const sx = Math.clamp(0, w - 1, x);
+        const ex = Math.clamp(0, w - 1, x + width - 1);
+        const sy = Math.clamp(0, h - 1, y);
+        const ey = Math.clamp(0, h - 1, y + height - 1);
+        if (sx > ex || sy > ey) return;
+
+        const rowBuf = pins.createBuffer(h);
+        for (let cx = sx; cx <= ex; cx++) {
+            this.getRow(cx, rowBuf);
+            for (let cy = sy; cy <= ey; cy++) {
+                rowBuf[cy] = color;
+            }
+            this.setRow(cx, rowBuf);
+        }
+    }
+
+    drawCircle(cx: number, cy: number, r: number, color: number) {
+        if (r < 1) return;
+        color &= 0xF;
+        let x = r;
+        let y = 0;
+        let err = 1 - (r << 1);
+
+        while (x >= y) {
+            this.setPixel(cx + x, cy + y, color);
+            this.setPixel(cx - x, cy + y, color);
+            this.setPixel(cx + x, cy - y, color);
+            this.setPixel(cx - x, cy - y, color);
+            this.setPixel(cx + y, cy + x, color);
+            this.setPixel(cx - y, cy + x, color);
+            this.setPixel(cx + y, cy - x, color);
+            this.setPixel(cx - y, cy - x, color);
+
+            y++;
+            if (err <= 0) {
+                err += (y + 1) << 1;
+            } else {
+                x--;
+                err += ((y - x) + 1) << 1;
+            }
+        }
+    }
+
+    fillCircle(cx: number, cy: number, r: number, color: number) {
+        if (r < 1) return;
+        color &= 0xF;
+        const h = this.height;
+        for (let dy = -r; dy <= r; dy++) {
+            let y = cy + dy;
+            if (y < 0) continue;
+            if (y >= h) break;
+            let dx = Math.sqrt(r * r - dy * dy) | 0;
+            this.drawLine(cx - dx, y, cx + dx, y, color);
+        }
+    }
+
+    drawOval(cx: number, cy: number, rx: number, ry: number, color: number) {
+        if (rx < 1 || ry < 1) return;
+        if (rx === ry) { this.drawCircle(cx, cy, rx, color); return; }
+        color &= 0xF;
+        let x = rx;
+        let y = 0;
+        let err = 2 - (rx << 1);
+        let rx2 = rx * rx;
+        let ry2 = ry * ry;
+
+        while (x >= 0) {
+            this.setPixel(cx + x, cy + y, color);
+            this.setPixel(cx - x, cy + y, color);
+            this.setPixel(cx + x, cy - y, color);
+            this.setPixel(cx - x, cy - y, color);
+
+            y++;
+            let err2 = err + rx2 * (1 - (y << 1));
+            if (err2 <= 0) {
+                err = err2 + ry2 * ((x - 1) << 1);
+                x--;
+            } else {
+                err = err2;
+            }
+        }
+    }
+
+    fillOval(cx: number, cy: number, rx: number, ry: number, color: number) {
+        if (rx < 1 || ry < 1) return;
+        if (rx === ry) { this.fillCircle(cx, cy, rx, color); return; }
+        color &= 0xF;
+        const h = this.height;
+        const ry2 = ry * ry;
+        for (let dy = -ry; dy <= ry; dy++) {
+            let y = cy + dy;
+            if (y < 0) continue;
+            if (y >= h) break;
+            let dx = Math.sqrt(rx * rx * (1 - (dy * dy / ry2))) | 0;
+            this.drawLine(cx - dx, y, cx + dx, y, color);
+        }
+    }
+
+    drawImage(dstFximg: FxImg, dx: number, dy: number) {
+        this._bulitDrawImage(dstFximg, dx, dy, false);
+    }
+
+    drawTransparentImage(dstFximg: FxImg, dx: number, dy: number) {
+        this._bulitDrawImage(dstFximg, dx, dy, true);
+    }
+
+    trim(): FxImg {
+        const w = this.width;
+        const h = this.height;
+
+        let minX = w, maxX = -1;
+        let minY = h, maxY = -1;
+
+        for (let x = 0; x < w; x++) {
+            for (let y = 0; y < h; y++) {
+                if (this.getPixel(x, y) !== 0) {
+                    minX = Math.min(minX, x);
+                    maxX = Math.max(maxX, x);
+                    minY = Math.min(minY, y);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+        }
+
+        if (maxX < minX) return new FxImg({ width: 1, height: 1 });  // ว่าง
+
+        const newW = maxX - minX + 1;
+        const newH = maxY - minY + 1;
+        const trimmed = new FxImg({ width: newW, height: newH });
+
+        trimmed.drawTransparentImage(this, -minX, -minY);
+
+        return trimmed;
+    }
+
+    scale(width: number, height: number): FxImg {
+        const ow = this.width;
+        const oh = this.height;
+        const dst = new FxImg({width, height});
+        const dstRowBuf = pins.createBuffer(height);
+        const fximgRowBuf = pins.createBuffer(oh);
+
+        for (let x = 0; x < width; x++) {
+            let sx = Math.idiv(x * ow, width);
+            this.getRow(sx, fximgRowBuf);
+            for (let y = 0; y < height; y++) {
+                let sy = Math.idiv(y * oh, height);
+                dstRowBuf[y] = fximgRowBuf[sy]
+            }
+            dst.setRow(x, dstRowBuf);
+        }
+        return dst;
+    }
+
+    rotate90(n90: number): FxImg {
+        n90 = n90 & 0x3;
+        if (n90 === 0) return this.clone();
+
+        const w = this.width;
+        const h = this.height;
+        const nw = (n90 & 1) ? h : w;
+        const nh = (n90 & 1) ? w : h;
+        const dst = new FxImg({ width: nw, height: nh });
+
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                let c = this.getPixel(x, y);
+                let nx: number, ny: number;
+                if (n90 === 1) { nx = y; ny = w - 1 - x; }
+                else if (n90 === 2) { nx = w - 1 - x; ny = h - 1 - y; }
+                else { nx = h - 1 - y; ny = x; }
+                dst.setPixel(nx, ny, c);
+            }
+        }
+        return dst;
+    }
+
+    rotate(theta: number): FxImg {
+        const ow = this.width;
+        const oh = this.height;
+
+        // หาขนาด bounding box ใหม่
+        const [nw, nh] = FxImg.rotatedBounds(ow, oh, theta);
+
+        // สร้าง Buffer ใหม่ขนาดใหญ่ขึ้น
+        const dst = new FxImg({ width: nw, height: nh });
+        //fill(dst, 0);  // พื้นหลังโปร่งใส (สี 0)
+
+        // จุดกึ่งกลางใหม่ (สำหรับวางภาพเก่าตรงกลาง)
+        const dstCx = nw >> 1;
+        const dstCy = nh >> 1;
+        const srcCx = ow >> 1;
+        const srcCy = oh >> 1;
+
+        const s = FxImg.iSin(theta);
+        const c = FxImg.iCos(theta);
+
+        // วาดทุกพิกเซลจาก dst → map กลับไป src (reverse rotation เพื่อ fill hole)
+        // หรือ forward จาก src → dst (แบบเดิม แต่ shift offset)
+        for (let dy = -dstCy; dy < nh - dstCy; dy++) {
+            for (let dx = -dstCx; dx < nw - dstCx; dx++) {
+                // dx, dy คือ offset จาก center ใหม่
+                let ox = Math.idiv(dx * c - dy * s, 120);
+                let oy = Math.idiv(dx * s + dy * c, 120);
+
+                let sx = ox + srcCx;
+                let sy = oy + srcCy;
+
+                if (sx < 0 || sx >= ow || sy < 0 || sy >= oh) continue;
+                let col = this.getPixel(sx, sy);
+                if (col < 1) continue;  // skip transparent
+                let tx = dx + dstCx;
+                let ty = dy + dstCy;
+                dst.setPixel(tx, ty, col);
+            }
+        }
+        return dst;
+    }
+
+    rotationFrame(count: number): FxImg {
+        if (count < 1) count = 1;
+        const step = Math.idiv(256, count);
+        let w = this.width;
+        let h = this.height;
+        const [bw, bh] = FxImg.rotatedBounds(w, h, 32);
+        const [bw2, bh2] = [bw << 1, bh << 1]
+        const bigBuf = new FxImg({ width: w + bw2, height: h + bh2, length: count });
+
+        let offset = 0;
+        for (let i = 0; i < count; i++) {
+            const [nw, nh] = FxImg.rotatedBounds(w, h, i * step);
+            let frame = this.rotate(i * step);
+            bigBuf.drawTransparentImage(frame, offset + Math.abs(bw - nw), Math.abs(bh - nh));
+            offset += w + bw2;
+        }
+        return bigBuf;
     }
 }

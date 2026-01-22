@@ -395,7 +395,7 @@ namespace fximage {
         const sh = fromFximg.getNumber(NumberFormat.UInt16LE, 0);
         const tw = toFximg.getNumber(NumberFormat.UInt16LE, 2);
         const th = toFximg.getNumber(NumberFormat.UInt16LE, 0);
-        
+
         const rowSrc = pins.createBuffer(sh);
         const rowDst = pins.createBuffer(th);
         for (let sx = 0; sx < sw; sx++) {

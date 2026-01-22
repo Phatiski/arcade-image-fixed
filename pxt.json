@@ -11,7 +11,8 @@
         "README.md",
         "assets.json",
         "fximg.class.ts",
-        "fximg.home.ts"
+        "fximg.home.ts",
+        "fximg.1st.ts"
     ],
     "testFiles": [
         "test.ts"
