@@ -1,4 +1,4 @@
-// meta={"simUrl":"https://trg-arcade.userpxt.io/v2.0.63/---simulator","cdnUrl":"https://cdn.makecode.com","version":"0.2.0","target":"arcade","targetVersion":"2.0.63","repo":"phatiski/arcade-image-fixed"}
+// meta={"simUrl":"https://trg-arcade.userpxt.io/v2.0.63/---simulator","cdnUrl":"https://cdn.makecode.com","version":"0.2.1","target":"arcade","targetVersion":"2.0.63","repo":"phatiski/arcade-image-fixed"}
 // total=1668647 new=30.15% cached=65.52% other=4.33%
 (function (ectx) {
 'use strict';
@@ -430,7 +430,7 @@ const pxsim_pxtrt = pxsim.pxtrt;
 const pxsim_numops = pxsim.numops;
 
 
-function _main___P21759(s) {
+function _main___P22715(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -1099,13 +1099,13 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-_main___P21759.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
-_main___P21759.continuations = [  ]
+_main___P22715.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
+_main___P22715.continuations = [  ]
 
-function _main___P21759_mk(s) {
+function _main___P22715_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: _main___P21759, depth: s.depth + 1,
+        parent: s, fn: _main___P22715, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   tmp_1: undefined,
@@ -2076,8 +2076,8 @@ switch (step) {
 
     s.cur___7457 = undefined;
     s.img___7464 = undefined;
-    s.unnamed190___U2 = undefined;
-    s.unnamed191___U3 = undefined;
+    s.unnamed238___U2 = undefined;
+    s.unnamed239___U3 = undefined;
     if (s.lambdaArgs) {
       s.arg0 = (s.lambdaArgs[0]);
       s.lambdaArgs = null;
@@ -2098,15 +2098,15 @@ switch (step) {
     r0 = pxsim_pxtrt.mapSetByString(s.tmp_0, "empty", 0);
     s.cur___7457 = (s.tmp_0);
     s.img___7464 = (undefined);
-    s.unnamed190___U2 = (s.arg0);
-    s.unnamed191___U3 = (0);
+    s.unnamed238___U2 = (s.arg0);
+    s.unnamed239___U3 = (0);
   case 1:
-    s.tmp_0 = r0 = s.unnamed191___U3;
-    r0 = pxsim_Array__length(s.unnamed190___U2);
+    s.tmp_0 = r0 = s.unnamed239___U3;
+    r0 = pxsim_Array__length(s.unnamed238___U2);
     s.tmp_1 = r0;
     r0 = (s.tmp_0 < s.tmp_1);
     if (!r0) { step = 4; continue; }
-    r0 = pxsim_Array__getAt(s.unnamed190___U2, s.unnamed191___U3);
+    r0 = pxsim_Array__getAt(s.unnamed238___U2, s.unnamed239___U3);
     s.img___7464 = (r0);
     s.tmp_2 = if_width_2_mk(s);
     s.tmp_2.arg0 = s.cur___7457;
@@ -2214,11 +2214,11 @@ switch (step) {
     r0 = s.retval;
   case 2:
   case 3:
-    r0 = (s.unnamed191___U3 + 1);
-    s.unnamed191___U3 = (r0);
+    r0 = (s.unnamed239___U3 + 1);
+    s.unnamed239___U3 = (r0);
     { step = 1; continue; }
   case 4:
-    s.unnamed190___U2 = (undefined);
+    s.unnamed238___U2 = (undefined);
     s.tmp_0 = if_area_2_mk(s);
     s.tmp_0.arg0 = s.cur___7457;
     s.tmp_2 = if_width_1_mk(s);
@@ -2281,8 +2281,8 @@ function FxImg_maxImgSizes_inline__P7454_mk(s) {
   tmp_8: undefined,
   cur___7457: undefined,
   img___7464: undefined,
-  unnamed190___U2: undefined,
-  unnamed191___U3: undefined,
+  unnamed238___U2: undefined,
+  unnamed239___U3: undefined,
   arg0: undefined,
 } }
 
@@ -43047,5 +43047,5 @@ const sprites_BaseSpriteSayRenderer__C2273_VT = mkVTable({
 
 const breakpoints = setupDebugger(1, ["FxImg_iSin___7335","FxImg_sineTable___7332","FxImg_iCos___7341","FxImg_rotatedBounds___7350","FxImg_pos2idx___7398","FxImg_isEmptyImage___7409","FxImg_isEmptyFrame___7421","FxImg_clip___7441","FxImg_maxImgSizes___7455"])
 
-return _main___P21759
+return _main___P22715
 })
