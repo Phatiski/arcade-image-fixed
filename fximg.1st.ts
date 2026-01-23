@@ -1,4 +1,4 @@
-/*
+/* ligacy code for checking when this latest code getting bug or unfixed error
 namespace fximage {
 
     const NIB_MASK0 = 0xf0;
