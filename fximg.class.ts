@@ -341,7 +341,8 @@ class FxImg {
         let err = dx - dy;
 
         while (1) {
-            if (x0 >= 0 && x0 < w && y0 >= 0 && y0 < h) this.setPixel(x0, y0, color);
+            if ((x0 < 0 || x0 >= w) || (y0 < 0 || y0 >= h)) break;
+            this.setPixel(x0, y0, color);
 
             // ตรวจทิศทาง + เกินจุดหมายหรือยัง (ป้องกัน overflow)
             if (((sx > 0 && x0 >= x1) || (sx < 0 && x0 <= x1)) ||
@@ -350,9 +351,6 @@ class FxImg {
             let e2 = err << 1;
             if (e2 > -dy) { err -= dy; x0 += sx; }
             if (e2 < dx) { err += dx; y0 += sy; }
-
-            if (((sx > 0 && x0 >= w) || (sx < 0 && x0 < 0)) ||
-                ((sy > 0 && y0 >= h) || (sy < 0 && y0 < 0))) break;
         }
     }
 
