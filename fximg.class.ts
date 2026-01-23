@@ -290,16 +290,16 @@ class FxImg {
         return true;
     }
 
-    copyFrom(otherFximg: FxImg) {
+    copyFrom(srcFximg: FxImg) {
         if (this.deleted) return;
-        otherFximg.sizeInit(this.width, this.height, this.length);
-        otherFximg.data = this.data.slice(0, otherFximg.data.length);
+        this.sizeInit(srcFximg.width, srcFximg.height, srcFximg.length);
+        this.data.write(0, srcFximg.data);
     }
 
     clone(): FxImg {
         if (this.deleted) return null;
         const dstFximg = new FxImg({ width: this.width, height: this.height, length: this.length });
-        dstFximg.data = this.data.slice(0, dstFximg.data.length);
+        dstFximg.data.write(0, this.data);
         return dstFximg;
     }
 
