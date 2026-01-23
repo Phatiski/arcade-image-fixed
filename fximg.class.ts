@@ -194,7 +194,7 @@ class FxImg {
     }
 
     constructor(v: { width: number, height: number, length?: number }, imgs?: Image[], listed?: boolean) {
-        this.init({ width: v.width, height: v.height, length: v.length }, imgs, listed );
+        this.init(v, imgs, listed );
     }
 
     delete() {
