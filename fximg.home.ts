@@ -6,11 +6,11 @@ namespace fximg {
         return new FxImg({width, height, length})
     }
 
-    export function fromImage(img: Image): FxImg {
+    export function image(img: Image): FxImg {
         return new FxImg({ width: null, height: null }, [img], false);
     }
 
-    export function fromFrame(imgs: Image[]): FxImg {
+    export function frame(imgs: Image[]): FxImg {
         return new FxImg({ width: null, height: null }, imgs, true);
     }
 }

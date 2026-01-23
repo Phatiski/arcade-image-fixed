@@ -103,10 +103,10 @@ class FxImg {
     }
 
     protected _bulitDrawImage(srcFximg: FxImg, dx: number, dy: number, transparent: boolean) {
-        const sw = this.width;
-        const sh = this.height;
-        const tw = srcFximg.width;
-        const th = srcFximg.height;
+        const sw = srcFximg.width;
+        const sh = srcFximg.height;
+        const tw = this.width;
+        const th = this.height;
     
         const rowSrc = pins.createBuffer(sh);
         const rowDst = pins.createBuffer(th);
@@ -115,8 +115,8 @@ class FxImg {
             if (tx < 0) continue;
             if (tx >= tw) break;
     
-            this.getRow(sx, rowSrc);
-            srcFximg.getRow(tx, rowDst);
+            srcFximg.getRow(sx, rowSrc);
+            this.getRow(tx, rowDst);
     
             for (let sy = 0; sy < sh; sy++) {
                 let ty = dy + sy;
@@ -390,7 +390,8 @@ class FxImg {
 
     drawCircle(cx: number, cy: number, r: number, color: number) {
         if (this.deleted) return;
-        if (r < 1) return;
+        r = Math.abs(r);
+        if (r === 0) return;
         color &= 0xF;
         let x = r;
         let y = 0;
@@ -418,7 +419,8 @@ class FxImg {
 
     fillCircle(cx: number, cy: number, r: number, color: number) {
         if (this.deleted) return;
-        if (r < 1) return;
+        r = Math.abs(r);
+        if (r === 0) return;
         color &= 0xF;
         const h = this.height;
         for (let dy = -r; dy <= r; dy++) {
@@ -432,35 +434,56 @@ class FxImg {
 
     drawOval(cx: number, cy: number, rx: number, ry: number, color: number) {
         if (this.deleted) return;
-        if (rx < 1 || ry < 1) return;
+        rx = Math.abs(rx); ry = Math.abs(ry);
+        if (rx === 0 || ry === 0) return;
         if (rx === ry) { this.drawCircle(cx, cy, rx, color); return; }
+        cy -= (ry >>> 1);
         color &= 0xF;
-        let x = rx;
-        let y = 0;
-        let err = 2 - (rx << 1);
-        let rx2 = rx * rx;
-        let ry2 = ry * ry;
 
-        while (x >= 0) {
-            this.setPixel(cx + x, cy + y, color);
-            this.setPixel(cx - x, cy + y, color);
-            this.setPixel(cx + x, cy - y, color);
-            this.setPixel(cx - x, cy - y, color);
+        let a = rx, b = ry;
+        let b1 = b & 1;             // odd radius correction
+    
+        let dx = ((1 - a) << 2) * (b * b);
+        let dy = ((b1 + 1) << 2) * (a * a);
+        let err = dx + dy + b1 * a * a;
+    
+        let x0 = cx - a, x1 = cx + a;
+        let y0 = cy + ((b + 1) >> 1);
+        let y1 = y0 - b1;
 
-            y++;
-            let err2 = err + rx2 * (1 - (y << 1));
-            if (err2 <= 0) {
-                err = err2 + ry2 * ((x - 1) << 1);
-                x--;
-            } else {
-                err = err2;
-            }
+        // Adjust left/right if rx odd
+        if (x0 > x1) { let t = x0; x0 = x1; x1 = t + a; }
+
+        a *= (a << 2);     // a = 4a²
+        b1 =  (b * b) << 2; // b1 = 4b²
+
+        do {
+            this.setPixel(x1, y0, color);
+            this.setPixel(x0, y0, color);
+            this.setPixel(x0, y1, color);
+            this.setPixel(x1, y1, color);
+
+            let e2 = err << 1;
+
+            if (e2 <= dy) { y0++; y1--; err += dy += a; }     // y step
+            if (e2 >= dx || (err << 1) > dy) 
+                { x0++; x1--; err += dx += b1; } // x step
+
+        } while (x0 <= x1);
+
+        // Draw tips for very flat ellipses
+        while (y0 - y1 < b) {
+            this.setPixel(x0 - 1, y0, color);
+            this.setPixel(x1 + 1, y0++, color);
+            this.setPixel(x0 - 1, y1, color);
+            this.setPixel(x1 + 1, y1--, color);
         }
     }
 
     fillOval(cx: number, cy: number, rx: number, ry: number, color: number) {
         if (this.deleted) return;
-        if (rx < 1 || ry < 1) return;
+        rx = Math.abs(rx); ry = Math.abs(ry);
+        if (rx === 0 || ry === 0) return;
         if (rx === ry) { this.fillCircle(cx, cy, rx, color); return; }
         color &= 0xF;
         const h = this.height;
@@ -474,14 +497,14 @@ class FxImg {
         }
     }
 
-    drawImage(dstFximg: FxImg, dx: number, dy: number) {
+    drawImage(srcFximg: FxImg, dx: number, dy: number) {
         if (this.deleted) return;
-        this._bulitDrawImage(dstFximg, dx, dy, false);
+        this._bulitDrawImage(srcFximg, dx, dy, false);
     }
 
-    drawTransparentImage(dstFximg: FxImg, dx: number, dy: number) {
+    drawTransparentImage(srcFximg: FxImg, dx: number, dy: number) {
         if (this.deleted) return;
-        this._bulitDrawImage(dstFximg, dx, dy, true);
+        this._bulitDrawImage(srcFximg, dx, dy, true);
     }
 
     trim(): FxImg {
