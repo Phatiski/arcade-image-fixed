@@ -1,7 +1,7 @@
 
 class FxImg {
 
-    private _deleted: boolean = false;
+    private _deleted: boolean;
     get deleted() { return this._deleted; }
 
     protected static readonly sineTable: number[] = [
@@ -179,6 +179,7 @@ class FxImg {
     }
 
     init(v: { width: number, height: number, length?: number }, imgs?: Image[], listed?: boolean) {
+        this._deleted = false;
         if (imgs && imgs.length > 0) v.length = imgs.length;
         else if (!v.length) v.length = 1;
         if (!imgs) {
