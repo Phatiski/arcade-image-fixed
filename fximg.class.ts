@@ -293,13 +293,13 @@ class FxImg {
     copyFrom(srcFximg: FxImg) {
         if (this.deleted) return;
         this.sizeInit(srcFximg.width, srcFximg.height, srcFximg.length);
-        this.data.write(0, srcFximg.data);
+        this.data = srcFximg.data.slice();
     }
 
     clone(): FxImg {
         if (this.deleted) return null;
         const dstFximg = new FxImg({ width: this.width, height: this.height, length: this.length });
-        dstFximg.data.write(0, this.data);
+        dstFximg.data = this.data.slice();
         return dstFximg;
     }
 
