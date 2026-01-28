@@ -317,28 +317,49 @@ namespace fximage {
 
     // 8. drawOval (midpoint oval - integer)
     export function drawOval(fximg: Buffer, cx: number, cy: number, rx: number, ry: number, color: number) {
-        if (rx < 1 || ry < 1) return;
+        rx = Math.abs(rx); ry = Math.abs(ry);
+        if (rx === 0 || ry === 0) return;
+        if (rx === ry) { this.drawCircle(cx, cy, rx, color); return; }
+        cy -= (ry >>> 1);
         color &= 0xF;
-        let x = rx;
-        let y = 0;
-        let err = 2 - 2 * rx;
-        let rx2 = rx << 1;
-        let ry2 = ry << 1;
 
-        while (x >= 0) {
-            setPixel(fximg, cx + x, cy + y, color);
-            setPixel(fximg, cx - x, cy + y, color);
-            setPixel(fximg, cx + x, cy - y, color);
-            setPixel(fximg, cx - x, cy - y, color);
+        let a = rx, b = ry;
+        let b1 = b & 1;             // odd radius correction
+    
+        let dx = ((1 - a) << 2) * (b * b);
+        let dy = ((b1 + 1) << 2) * (a * a);
+        let err = dx + dy + b1 * a * a;
+    
+        let x0 = cx - a, x1 = cx + a;
+        let y0 = cy + ((b + 1) >> 1);
+        let y1 = y0 - b1;
 
-            y++;
-            let err2 = err + rx2 * (1 - 2 * y);
-            if (err2 <= 0) {
-                err = err2 + ry2 * (2 * x - 1);
-                x--;
-            } else {
-                err = err2;
-            }
+        // Adjust left/right if rx odd
+        if (x0 > x1) { let t = x0; x0 = x1; x1 = t + a; }
+
+        a *= (a << 2);     // a = 4a²
+        b1 =  (b * b) << 2; // b1 = 4b²
+
+        do {
+            this.setPixel(x1, y0, color);
+            this.setPixel(x0, y0, color);
+            this.setPixel(x0, y1, color);
+            this.setPixel(x1, y1, color);
+
+            let e2 = err << 1;
+
+            if (e2 <= dy) { y0++; y1--; err += dy += a; }     // y step
+            if (e2 >= dx || (err << 1) > dy) 
+                { x0++; x1--; err += dx += b1; } // x step
+
+        } while (x0 <= x1);
+
+        // Draw tips for very flat ellipses
+        while (y0 - y1 < b) {
+            this.setPixel(x0 - 1, y0, color);
+            this.setPixel(x1 + 1, y0++, color);
+            this.setPixel(x0 - 1, y1, color);
+            this.setPixel(x1 + 1, y1--, color);
         }
     }
 
