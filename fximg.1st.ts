@@ -395,23 +395,25 @@ namespace fximage {
         const sh = fromFximg.getNumber(NumberFormat.UInt16LE, 0);
         const tw = toFximg.getNumber(NumberFormat.UInt16LE, 2);
         const th = toFximg.getNumber(NumberFormat.UInt16LE, 0);
-
+    
         const rowSrc = pins.createBuffer(sh);
         const rowDst = pins.createBuffer(th);
         for (let sx = 0; sx < sw; sx++) {
             let tx = dx + sx;
-            if (tx < 0 || tx >= tw) continue;
-
-            getRow(fromFximg, sx, rowSrc, sh);
-            getRow(toFximg, tx, rowDst, th);
-
+            if (tx < 0) continue;
+            if (tx >= tw) break;
+    
+            srcFximg.getRow(sx, rowSrc);
+            this.getRow(tx, rowDst);
+    
             for (let sy = 0; sy < sh; sy++) {
                 let ty = dy + sy;
-                if (ty < 0 && ty >= th) continue;
+                if (ty < 0) continue;
+                if (ty >= th) break;
                 if (transparent && rowSrc[sy] < 1) continue;
                 rowDst[ty] = rowSrc[sy];
             }
-            setRow(toFximg, tx, rowDst, th);
+            this.setRow(tx, rowDst);
         }
     }
 
