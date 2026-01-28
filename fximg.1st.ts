@@ -189,23 +189,25 @@ namespace fximage {
 
     // 1. drawLine (Bresenham ปรับปรุงตามที่ภัทรแนะนำ - ใช้ sx/sy ตรวจทิศทาง ไม่เช็คจุดเริ่ม=จุดจบ)
     export function drawLine(fximg: Buffer, x0: number, y0: number, x1: number, y1: number, color: number) {
+        if (x0 === x1 && y0 === y1) { this.setPixel(x0, y0, color); return; }
         const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
         const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
         color &= 0xF;
 
         let dx = Math.abs(x1 - x0);
         let dy = Math.abs(y1 - y0);
-        let sx = x0 < x1 ? 1 : -1;
-        let sy = y0 < y1 ? 1 : -1;
+        let sx = Math.clamp(-1, 1, x1 - x0);
+        let sy = Math.clamp(-1, 1, y1 - y0);
         let err = dx - dy;
 
         while (1) {
-            if (x0 >= 0 && x0 < w && y0 >= 0 && y0 < h)
-                setPixel(fximg, x0, y0, color);
+            if (((sx < 0 && x0 < 0) || (sx > 0 && x0 >= w) && sx !== 0) || 
+                ((sy < 0 && y0 < 0) || (sy > 0 && y0 >= h) && sy !== 0)) break;
+            this.setPixel(x0, y0, color);
 
             // ตรวจทิศทาง + เกินจุดหมายหรือยัง (ป้องกัน overflow)
-            if (((sx > 0 && x0 >= x1) || (sx < 0 && x0 <= x1))
-                || ((sy > 0 && y0 >= y1) || (sy < 0 && y0 <= y1))) break;
+            if (((sx > 0 && x0 >= x1) || (sx < 0 && x0 <= x1) && sx !== 0) ||
+                ((sy > 0 && y0 >= y1) || (sy < 0 && y0 <= y1) && sy !== 0)) break;
 
             let e2 = err << 1;
             if (e2 > -dy) { err -= dy; x0 += sx; }
