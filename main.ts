@@ -44,10 +44,10 @@ namespace fximage {
             if (v > 0xffffffff) v = 0xffffffff;
             fximg.setNumber(NumberFormat.UInt32LE, idx, v);
         } else if (b2 === 0x1) {
-            if (v > 0x0000ffff) v = 0x0000ffff;
+            if (v > 0xffff) v = 0xffff;
             fximg.setNumber(NumberFormat.UInt16LE, idx, v);
         } else if (b2 === 0x0) {
-            if (v > 0x000000ff) v = 0x000000ff;
+            if (v > 0xff) v = 0xff;
             fximg.setNumber(NumberFormat.UInt8LE, idx, v);
         }
     }
@@ -82,16 +82,16 @@ namespace fximage {
     function initFximgData(width: number, height: number, length: number) {
         if (width > 0xffffffff) width = 0xffffffff; if (height > 0xffffffff) height = 0xffffffff; if (length > 0xffffffff) length = 0xffffffff;
         let header = 0x00, ws = 0b00, hs = 0b00, ls = 0b00;
-        if (width > 0x000000ff) ws++;
-        if (width > 0x0000ffff) ws++;
+        if (width > 0xff) ws++;
+        if (width > 0xffff) ws++;
         if (ws < 0x0 || ws > 0x3) ws &= 0x3;
         if (ws > 0x0) header += (ws << 4);
-        if (height > 0x000000ff) hs++;
-        if (height > 0x0000ffff) hs++;
+        if (height > 0xff) hs++;
+        if (height > 0xffff) hs++;
         if (hs < 0x0 || hs > 0x3) hs &= 0x3;
         if (hs > 0x0) header += (hs << 2);
-        if (length > 0x000000ff) ls++;
-        if (length > 0x0000ffff) ls++;
+        if (length > 0xff) ls++;
+        if (length > 0xffff) ls++;
         if (ls < 0x0 || ls > 0x3) ls &= 0x3;
         if (ls > 0x0) header += (ls);
         const mdata = { head: header, ws, hs, ls, mds: 1 };
