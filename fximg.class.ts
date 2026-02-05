@@ -1,4 +1,4 @@
-
+/*
 class FxImg {
 
     private _deleted: boolean;
@@ -644,3 +644,4 @@ class FxImg {
         return bigBuf;
     }
 }
+*/
