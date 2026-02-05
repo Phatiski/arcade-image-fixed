@@ -1,4 +1,11 @@
 
+enum FximgDataIdx {
+        width  = 0x0,
+        height = 0x1,
+        flen   = 0x2,
+        length = 0x3,
+}
+
 namespace fximage {
 
     const NIB_MASK0 = 0xf0;
@@ -9,13 +16,61 @@ namespace fximage {
     export const isOutOfArea = (x: number, y: number, w: number, h: number) => (isOutOfRange(x, w) || isOutOfRange(y, h));
     export const isEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
 
+    export function getFximgOffset(header: number, idxType: FximgDataIdx) {
+        header &= 0xff;
+        let idx = 1, b2 = 0;
+        if (idxType >= 0x0) {
+            b2 = header;
+            b2 &= 0x3;
+            if (idxType > 0x0) idx += (1 << b2);
+        }
+        if (idxType >= 0x1) {
+            b2 = (header >> 2);
+            b2 &= 0x3;
+            if (idxType > 0x1) idx += (1 << b2);
+        }
+        if (idxType >= 0x2) {
+            b2 = (header >> 4);
+            b2 &= 0x3;
+            if (idxType > 0x2) idx += (1 << b2);
+        }
+        return { idx: idx, b2: b2 }
+    }
+
+    export function setFximgData(fximg: Buffer, dataType: FximgDataIdx, v: number) {
+        if (dataType >= 0x3) return;
+        const { idx, b2 } = getFximgOffset(fximg[0], dataType);
+        if (b2 === 0x2) {
+            if (v > 0xffffffff) v = 0xffffffff;
+            fximg.setNumber(NumberFormat.UInt32LE, idx, v);
+        } else if (b2 === 0x1) {
+            if (v > 0x0000ffff) v = 0x0000ffff;
+            fximg.setNumber(NumberFormat.UInt16LE, idx, v);
+        } else if (b2 === 0x0) {
+            if (v > 0x000000ff) v = 0x000000ff;
+            fximg.setNumber(NumberFormat.UInt8LE, idx, v);
+        }
+    }
+
+    export function getFximgData(fximg: Buffer, dataType: FximgDataIdx) {
+        const { idx, b2 } = getFximgOffset(fximg[0], dataType);
+        if (dataType >= 0x3) return idx;
+        if (b2 === 0x2) return fximg.getNumber(NumberFormat.UInt32LE, idx);
+        if (b2 === 0x1) return fximg.getNumber(NumberFormat.UInt16LE, idx);
+        return fximg.getNumber(NumberFormat.UInt8LE, idx);
+    }
+
     export function widthOf(fximg: Buffer) {
-        if (fximg.length < 5) return 0;
-        return fximg.getNumber(NumberFormat.UInt8LE, 2);
+        if (fximg.length < 1) return 0;
+        return getFximgData(fximg, 0x0);
     }
     export function heightOf(fximg: Buffer) {
+        if (fximg.length < 1) return 0;
+        return getFximgData(fximg, 0x1);
+    }
+    export function lenghtOf(fximg: Buffer) {
         if (fximg.length < 5) return 0;
-        return fximg.getNumber(NumberFormat.UInt8LE, 0);
+        return getFximgData(fximg, 0x2);
     }
     export function dimensionOf(fximg: Buffer, d: image.Dimension) {
         switch (d) {
@@ -44,57 +99,6 @@ namespace fximage {
         mdata.mds += (1 << hs);
         mdata.mds += (1 << ls);
         return mdata;
-    }
-
-    export enum dataIdx {
-        width  = 0x0,
-        height = 0x1,
-        flen   = 0x2,
-        length = 0x3,
-    }
-
-    export function getDataIndex(header: number, idxType: dataIdx) {
-        header &= 0xff;
-        let idx = 1, b2 = 0;
-        if (idxType >= 0x0) {
-            b2 = header;
-            b2 &= 0x3;
-            if (idxType > 0x0) idx += (1 << b2);
-        }
-        if (idxType >= 0x1) {
-            b2 = (header >> 2);
-            b2 &= 0x3;
-            if (idxType > 0x1) idx += (1 << b2);
-        }
-        if (idxType >= 0x2) {
-            b2 = (header >> 4);
-            b2 &= 0x3;
-            if (idxType > 0x2) idx += (1 << b2);
-        }
-        return { idx: idx, b2: b2 }
-    }
-
-    export function setFximgData(fximg: Buffer, dataType: dataIdx, v: number) {
-        if (dataType >= 0x3) return;
-        const { idx, b2 } = getDataIndex(fximg[0], dataType);
-        if (b2 === 0x2) {
-            if (v > 0xffffffff) v = 0xffffffff;
-            fximg.setNumber(NumberFormat.UInt32LE, idx, v);
-        } else if (b2 === 0x1) {
-            if (v > 0x0000ffff) v = 0x0000ffff;
-            fximg.setNumber(NumberFormat.UInt16LE, idx, v);
-        } else if (b2 === 0x0) {
-            if (v > 0x000000ff) v = 0x000000ff;
-            fximg.setNumber(NumberFormat.UInt8LE, idx, v);
-        }
-    }
-
-    export function getFximgData(fximg: Buffer, dataType: dataIdx) {
-        const { idx, b2 } = getDataIndex(fximg[0], dataType);
-        if (dataType >= 0x3) return idx;
-        if (b2 === 0x2) return fximg.getNumber(NumberFormat.UInt32LE, idx);
-        if (b2 === 0x1) return fximg.getNumber(NumberFormat.UInt16LE, idx);
-        return fximg.getNumber(NumberFormat.UInt8LE, idx);
     }
 
     export function createFrame(width: number, height: number, length: number): Buffer {
@@ -167,7 +171,7 @@ namespace fximage {
         const img = image.create(getFximgData(fximgs, 0x0), getFximgData(fximgs, 0x1));
         const tmpn = img.height;
         const tbuf = pins.createBuffer(tmpn);
-        const startIdx = getDataIndex(fximgs[0], 0x3).idx;
+        const startIdx = getFximgOffset(fximgs[0], 0x3).idx;
         for (let nw = 0; (((1 + (nw * img.height)) >> 1) + startIdx) < fximgs.length; nw += img.width) {
             for (let x = 0; x < img.width; x++) {
                 getRow(fximgs, nw + x, tbuf, tmpn);
@@ -182,7 +186,7 @@ namespace fximage {
         if (isOutOfArea(x, y, getFximgData(fximg, 0x0) * getFximgData(fximg, 0x2), getFximgData(fximg, 0x1))) return;
         c &= 0xf;
         const i = _pos2idx(x, getFximgData(fximg, 0x1), y);
-        const ih4 = (i >>> 1) + getDataIndex(fximg[0], 0x3).idx;
+        const ih4 = (i >>> 1) + getFximgOffset(fximg[0], 0x3).idx;
         const curv = fximg[ih4]
         let nib0 = curv & 0xf,
             nib1 = curv >>> 4;
@@ -196,7 +200,7 @@ namespace fximage {
         if (isOutOfArea(x, y, getFximgData(fximg, 0x0) * getFximgData(fximg, 0x2), getFximgData(fximg, 0x1))) return 0;
         const i = _pos2idx(x, getFximgData(fximg, 0x1), y);
         const ih = i >>> 1;
-        const ih4 = ih + 4;
+        const ih4 = ih + getFximgOffset(fximg[0], 0x3).idx;
         const curv = fximg[ih4];
         return (i & 1 ? curv & 0xf : curv >>> 4)
     }
@@ -205,7 +209,7 @@ namespace fximage {
         if (isOutOfRange(x, getFximgData(fximg, 0x0) * getFximgData(fximg, 0x2))) return;
         const h0 = tmpn ? tmpn : getFximgData(fximg, 0x1);
         const len = Math.min(src.length, h0);
-        const start = getDataIndex(fximg[0], 0x3).idx;
+        const start = getFximgOffset(fximg[0], 0x3).idx;
         if (len < 1) return;
         let i = x * h0,
             y = 0;
@@ -232,7 +236,7 @@ namespace fximage {
         if (isOutOfRange(x, getFximgData(fximg, 0x0) * getFximgData(fximg, 0x2))) return;
         const h0 = tmpn ? tmpn : getFximgData(fximg, 0x1);
         const len = Math.min(dst.length, h0);
-        const start = getDataIndex(fximg[0], 0x3).idx;
+        const start = getFximgOffset(fximg[0], 0x3).idx;
         if (len < 1) return;
         let i = x * h0,
             y = 0;
