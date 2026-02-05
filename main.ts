@@ -36,7 +36,6 @@ namespace fximage {
         }
         return { idx: idx, b2: b2 }
     }
-
     export function setFximgData(fximg: Buffer, dataType: FximgDataIdx, v: number) {
         if (dataType >= 0x3) return;
         const { idx, b2 } = getFximgOffset(fximg[0], dataType);
@@ -51,7 +50,6 @@ namespace fximage {
             fximg.setNumber(NumberFormat.UInt8LE, idx, v);
         }
     }
-
     export function getFximgData(fximg: Buffer, dataType: FximgDataIdx) {
         const { idx, b2 } = getFximgOffset(fximg[0], dataType);
         if (dataType >= 0x3) return idx;
@@ -84,15 +82,15 @@ namespace fximage {
         let header = 0x00, ws = 0b00, hs = 0b00, ls = 0b00;
         if (width > 0xff) ws++;
         if (width > 0xffff) ws++;
-        if (ws < 0x0 || ws > 0x3) ws &= 0x3;
+        //if (ws < 0x0 || ws > 0x3) ws &= 0x3;
         if (ws > 0x0) header += (ws << 4);
         if (height > 0xff) hs++;
         if (height > 0xffff) hs++;
-        if (hs < 0x0 || hs > 0x3) hs &= 0x3;
+        //if (hs < 0x0 || hs > 0x3) hs &= 0x3;
         if (hs > 0x0) header += (hs << 2);
         if (length > 0xff) ls++;
         if (length > 0xffff) ls++;
-        if (ls < 0x0 || ls > 0x3) ls &= 0x3;
+        //if (ls < 0x0 || ls > 0x3) ls &= 0x3;
         if (ls > 0x0) header += (ls);
         const mdata = { head: header, ws, hs, ls, mds: 1 };
         mdata.mds += (1 << ws);
