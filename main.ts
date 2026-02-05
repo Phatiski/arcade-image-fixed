@@ -1,9 +1,9 @@
 
 enum FximgDataIdx {
-        width  = 0x0,
-        height = 0x1,
-        flen   = 0x2,
-        length = 0x3,
+    width  = 0x0,
+    height = 0x1,
+    flen   = 0x2,
+    length = 0x3,
 }
 
 namespace fximage {
