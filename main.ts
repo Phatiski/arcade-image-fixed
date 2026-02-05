@@ -25,8 +25,8 @@ namespace fximage {
     }
 
     function initFximgData(width: number, height: number, length: number) {
-        width &= 0xffffffff, height &= 0xffffffff, length &= 0xffffffff;
-        let header = 0x0, ws = 0b00, hs = 0b00, ls = 0b00;
+        if (width > 0xffffffff) width = 0xffffffff; if (height > 0xffffffff) height = 0xffffffff; if (length > 0xffffffff) length = 0xffffffff;
+        let header = 0x00, ws = 0b00, hs = 0b00, ls = 0b00;
         if (width > 0x000000ff) ws++;
         if (width > 0x0000ffff) ws++;
         if (ws < 0x0 || ws > 0x3) ws &= 0x3;
@@ -78,13 +78,13 @@ namespace fximage {
         if (dataType >= 0x3) return;
         const { idx, b2 } = getDataIndex(fximg[0], dataType);
         if (b2 === 0x2) {
-            v &= 0xffffffff;
+            if (v > 0xffffffff) v = 0xffffffff;
             fximg.setNumber(NumberFormat.UInt32LE, idx, v);
         } else if (b2 === 0x1) {
-            v &= 0x0000ffff;
+            if (v > 0x0000ffff) v = 0x0000ffff;
             fximg.setNumber(NumberFormat.UInt16LE, idx, v);
         } else if (b2 === 0x0) {
-            v &= 0x000000ff;
+            if (v > 0x000000ff) v = 0x000000ff;
             fximg.setNumber(NumberFormat.UInt8LE, idx, v);
         }
     }
