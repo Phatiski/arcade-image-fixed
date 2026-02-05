@@ -17,6 +17,7 @@ namespace fximage {
     export const isEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
 
     export function getFximgOffset(header: number, idxType: FximgDataIdx) {
+        if (idxType < 0x0 || idxType > 0x3) return { idx: -1, b2: -1 }
         header &= 0xff;
         let idx = 1, b2 = 0;
         if (idxType >= 0x0) {
@@ -36,9 +37,13 @@ namespace fximage {
         }
         return { idx: idx, b2: b2 }
     }
+    export function startIndex(fximg: Buffer) {
+        return getFximgOffset(fximg[0], 0x3);
+    }
     export function setFximgData(fximg: Buffer, dataType: FximgDataIdx, v: number) {
         if (dataType >= 0x3) return;
         const { idx, b2 } = getFximgOffset(fximg[0], dataType);
+        if (idx < 0 || b2 < 0) return;
         if (b2 === 0x2) {
             if (v > 0xffffffff) v = 0xffffffff;
             fximg.setNumber(NumberFormat.UInt32LE, idx, v);
@@ -52,9 +57,11 @@ namespace fximage {
     }
     export function getFximgData(fximg: Buffer, dataType: FximgDataIdx) {
         const { idx, b2 } = getFximgOffset(fximg[0], dataType);
+        if (idx < 0 || b2 < 0) return -1;
         if (dataType >= 0x3) return idx;
-        if (b2 === 0x2) return fximg.getNumber(NumberFormat.UInt32LE, idx);
-        if (b2 === 0x1) return fximg.getNumber(NumberFormat.UInt16LE, idx);
+        if (b2 >= 0x3) return -1;
+        if (b2 >= 0x2) return fximg.getNumber(NumberFormat.UInt32LE, idx);
+        if (b2 >= 0x1) return fximg.getNumber(NumberFormat.UInt16LE, idx);
         return fximg.getNumber(NumberFormat.UInt8LE, idx);
     }
 
