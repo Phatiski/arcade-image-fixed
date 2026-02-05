@@ -1,4 +1,4 @@
-
+/*
 namespace fximg {
 
     export function create(width: number, height: number, length?: number): FxImg {
@@ -14,3 +14,4 @@ namespace fximg {
         return new FxImg({ width: null, height: null }, imgs, true);
     }
 }
+*/
