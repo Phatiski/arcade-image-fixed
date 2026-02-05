@@ -92,7 +92,7 @@ namespace fximage {
         if (length > 0xffff) ls++;
         //if (ls < 0x0 || ls > 0x3) ls &= 0x3;
         if (ls > 0x0) header += (ls);
-        const mdata = { head: header, ws, hs, ls, mds: 1 };
+        const mdata = { header: header, ws, hs, ls, mds: 1 };
         mdata.mds += (1 << ws);
         mdata.mds += (1 << hs);
         mdata.mds += (1 << ls);
@@ -102,7 +102,8 @@ namespace fximage {
     export function createFrame(width: number, height: number, length: number): Buffer {
         if (!length) length = 1;
         const mdata = initFximgData(width, height, length)
-        const fximg = pins.createBuffer(mdata.mds + ((1 + (width * height * length)) >>> 1))
+        const fximg = pins.createBuffer(mdata.mds + ((1 + (width * height * length)) >>> 1));
+        fximg[0] = mdata.header;
         setFximgData(fximg, 0x0, width);
         setFximgData(fximg, 0x1, height);
         setFximgData(fximg, 0x2, length);
