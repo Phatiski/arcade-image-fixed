@@ -5,6 +5,8 @@ namespace fximage {
     const NIB_MASK1 = 0x0f;
 
     export const _pos2idx = (a: number, amax: number, b: number) => (a * amax) + b;
+    export const isOutOfRange = (n: number, r: number) => (n < 0 || n >= r);
+    export const isOutOfArea = (x: number, y: number, w: number, h: number) => (isOutOfRange(x, w) || isOutOfRange(y, h));
     export const isEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
 
     export function widthOf(fximg: Buffer) {
@@ -22,31 +24,96 @@ namespace fximage {
         } return 0;
     }
 
-    export function create(width: number, height: number): Buffer {
-        const fximg = pins.createBuffer(4 + ((1 + (width * height)) >>> 1))
-        fximg.setNumber(NumberFormat.UInt16LE, 0, height);
-        fximg.setNumber(NumberFormat.UInt16LE, 2, width)
-        return fximg;
+    function initFximgData(width: number, height: number, length: number) {
+        width &= 0xffffffff, height &= 0xffffffff, length &= 0xffffffff;
+        let header = 0x0, ws = 0b00, hs = 0b00, ls = 0b00;
+        if (width > 0x000000ff) ws++;
+        if (width > 0x0000ffff) ws++;
+        if (ws < 0x0 || ws > 0x3) ws &= 0x3;
+        if (ws > 0x0) header += (ws << 4);
+        if (height > 0x000000ff) hs++;
+        if (height > 0x0000ffff) hs++;
+        if (hs < 0x0 || hs > 0x3) hs &= 0x3;
+        if (hs > 0x0) header += (hs << 2);
+        if (length > 0x000000ff) ls++;
+        if (length > 0x0000ffff) ls++;
+        if (ls < 0x0 || ls > 0x3) ls &= 0x3;
+        if (ls > 0x0) header += (ls);
+        const mdata = { head: header, ws, hs, ls, mds: 1 };
+        mdata.mds += (1 << ws);
+        mdata.mds += (1 << hs);
+        mdata.mds += (1 << ls);
+        return mdata;
+    }
+
+    export enum dataIdx {
+        width  = 0x0,
+        height = 0x1,
+        flen   = 0x2,
+        length = 0x3,
+    }
+
+    export function getDataIndex(header: number, idxType: dataIdx) {
+        header &= 0xff;
+        let idx = 1, b2 = 0;
+        if (idxType >= 0x0) {
+            b2 = header;
+            b2 &= 0x3;
+            if (idxType > 0x0) idx += (1 << b2);
+        }
+        if (idxType >= 0x1) {
+            b2 = (header >> 2);
+            b2 &= 0x3;
+            if (idxType > 0x1) idx += (1 << b2);
+        }
+        if (idxType >= 0x2) {
+            b2 = (header >> 4);
+            b2 &= 0x3;
+            if (idxType > 0x2) idx += (1 << b2);
+        }
+        return { idx: idx, b2: b2 }
+    }
+
+    export function setFximgData(fximg: Buffer, dataType: dataIdx, v: number) {
+        if (dataType >= 0x3) return;
+        const { idx, b2 } = getDataIndex(fximg[0], dataType);
+        if (b2 === 0x2) {
+            v &= 0xffffffff;
+            fximg.setNumber(NumberFormat.UInt32LE, idx, v);
+        } else if (b2 === 0x1) {
+            v &= 0x0000ffff;
+            fximg.setNumber(NumberFormat.UInt16LE, idx, v);
+        } else if (b2 === 0x0) {
+            v &= 0x000000ff;
+            fximg.setNumber(NumberFormat.UInt8LE, idx, v);
+        }
+    }
+
+    export function getFximgData(fximg: Buffer, dataType: dataIdx) {
+        const { idx, b2 } = getDataIndex(fximg[0], dataType);
+        if (dataType >= 0x3) return idx;
+        if (b2 === 0x2) return fximg.getNumber(NumberFormat.UInt32LE, idx);
+        if (b2 === 0x1) return fximg.getNumber(NumberFormat.UInt16LE, idx);
+        return fximg.getNumber(NumberFormat.UInt8LE, idx);
     }
 
     export function createFrame(width: number, height: number, length: number): Buffer {
-        const fximg = pins.createBuffer(4 + ((1 + (width * height * length)) >> 1));
-        fximg.setNumber(NumberFormat.UInt16LE, 0, height);
-        fximg.setNumber(NumberFormat.UInt16LE, 2, width);
+        if (!length) length = 1;
+        const mdata = initFximgData(width, height, length)
+        const fximg = pins.createBuffer(mdata.mds + ((1 + (width * height * length)) >>> 1))
+        setFximgData(fximg, 0x0, width);
+        setFximgData(fximg, 0x1, height);
+        setFximgData(fximg, 0x2, length);
         return fximg;
     }
 
-    export function frameCount(fximgs: Buffer): number {
-        if (fximgs.length < 5) return 0;
-        const area = ((1 + (fximgs.getNumber(NumberFormat.UInt16LE, 2) * fximgs.getNumber(NumberFormat.UInt16LE, 0))) >> 1);
-        return Math.idiv(fximgs.length - 4, area);
+    export function create(width: number, height: number): Buffer {
+        return createFrame(width, height, 1);
     }
 
     export function fromImage(img: Image): Buffer {
-        if (isEmptyImage(img)) return create(img.width, img.height);
-        const fximg = pins.createBuffer(4 + ((1 + (img.width * img.height)) >>> 1));
-        fximg.setNumber(NumberFormat.UInt16LE, 0, img.height);
-        fximg.setNumber(NumberFormat.UInt16LE, 2, img.width);
+        const fximg = create(img.width, img.height);
+        if (isEmptyImage(img)) return fximg;
         const tmpn = img.height
         const tbuf = pins.createBuffer(tmpn);
         for (let x = 0; x < img.width; x++) {
@@ -57,7 +124,7 @@ namespace fximage {
     }
 
     export function toImage(fximg: Buffer): Image {
-        const img = image.create(fximg.getNumber(NumberFormat.UInt16LE, 2), fximg.getNumber(NumberFormat.UInt16LE, 0));
+        const img = image.create(getFximgData(fximg, 0x0), getFximgData(fximg, 0x1));
         const tmpn = img.height;
         const tbuf = pins.createBuffer(tmpn);
         for (let x = 0; x < img.width; x++) {
@@ -80,10 +147,8 @@ namespace fximage {
 
     export function fromFrame(imgs: Image[]) {
         const allSize = maxImgSizes(imgs);
-        if (allSize.empty >= imgs.length) return createFrame(allSize.width, allSize.height, imgs.length);
-        const fximgs = pins.createBuffer(4 + ((1 + (allSize.area * imgs.length)) >> 1));
-        fximgs.setNumber(NumberFormat.UInt16LE, 0, allSize.height);
-        fximgs.setNumber(NumberFormat.UInt16LE, 2, allSize.width);
+        const fximgs = createFrame(allSize.width, allSize.height, imgs.length);
+        if (allSize.empty >= imgs.length) return fximgs;
         const tmpn = allSize.height;
         const tbuf = pins.createBuffer(tmpn);
         let nw = 0;
@@ -99,10 +164,11 @@ namespace fximage {
 
     export function toFrame(fximgs: Buffer) {
         const imgs: Image[] = []
-        const img = image.create(fximgs.getNumber(NumberFormat.UInt16LE, 2), fximgs.getNumber(NumberFormat.UInt16LE, 0));
+        const img = image.create(getFximgData(fximgs, 0x0), getFximgData(fximgs, 0x1));
         const tmpn = img.height;
         const tbuf = pins.createBuffer(tmpn);
-        for (let nw = 0; (((1 + (nw * img.height)) >> 1) + 4) < fximgs.length; nw += img.width) {
+        const startIdx = getDataIndex(fximgs[0], 0x3).idx;
+        for (let nw = 0; (((1 + (nw * img.height)) >> 1) + startIdx) < fximgs.length; nw += img.width) {
             for (let x = 0; x < img.width; x++) {
                 getRow(fximgs, nw + x, tbuf, tmpn);
                 img.setRows(x, tbuf);
@@ -113,9 +179,10 @@ namespace fximage {
     }
 
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
+        if (isOutOfArea(x, y, getFximgData(fximg, 0x0) * getFximgData(fximg, 0x2), getFximgData(fximg, 0x1))) return;
         c &= 0xf;
-        const i = _pos2idx(x, fximg.getNumber(NumberFormat.UInt16LE, 0), y)
-        const ih4 = (i >>> 1) + 4;
+        const i = _pos2idx(x, getFximgData(fximg, 0x1), y);
+        const ih4 = (i >>> 1) + getDataIndex(fximg[0], 0x3).idx;
         const curv = fximg[ih4]
         let nib0 = curv & 0xf,
             nib1 = curv >>> 4;
@@ -126,7 +193,8 @@ namespace fximage {
     }
 
     export function getPixel(fximg: Buffer, x: number, y: number) {
-        const i = _pos2idx(x, fximg.getNumber(NumberFormat.UInt16LE, 0), y);
+        if (isOutOfArea(x, y, getFximgData(fximg, 0x0) * getFximgData(fximg, 0x2), getFximgData(fximg, 0x1))) return 0;
+        const i = _pos2idx(x, getFximgData(fximg, 0x1), y);
         const ih = i >>> 1;
         const ih4 = ih + 4;
         const curv = fximg[ih4];
@@ -134,50 +202,54 @@ namespace fximage {
     }
 
     export function setRow(fximg: Buffer, x: number, src: Buffer, tmpn?: number) {
-        const h0 = tmpn ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0)
+        if (isOutOfRange(x, getFximgData(fximg, 0x0) * getFximgData(fximg, 0x2))) return;
+        const h0 = tmpn ? tmpn : getFximgData(fximg, 0x1);
         const len = Math.min(src.length, h0);
+        const start = getDataIndex(fximg[0], 0x3).idx;
         if (len < 1) return;
         let i = x * h0,
             y = 0;
         if (i & 1) {
             src[y] &= 0xf;
-            const ih4 = (i >>> 1) + 4;
+            const ih4 = (i >>> 1) + start;
             fximg[ih4] = (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
             i++, y++;
         }
         for (; y < len - 1; y += 2) {
             src[y] &= 0xf, src[y + 1] &= 0xf;
-            const ih4 = (i >>> 1) + 4;
+            const ih4 = (i >>> 1) + start;
             fximg[ih4] = (src[y] << 4) | (src[y + 1] & NIB_MASK1);
             i += 2;
         }
         if (y < len) {
             src[y] &= 0xf;
-            const ih4 = (i >>> 1) + 4;
+            const ih4 = (i >>> 1) + start;
             fximg[ih4] = (i & 1) ? (src[y] << 4) | (fximg[ih4] & NIB_MASK1) : (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
         }
     }
 
     export function getRow(fximg: Buffer, x: number, dst: Buffer, tmpn?: number) {
-        const h0 = tmpn ? tmpn : fximg.getNumber(NumberFormat.UInt16LE, 0);
+        if (isOutOfRange(x, getFximgData(fximg, 0x0) * getFximgData(fximg, 0x2))) return;
+        const h0 = tmpn ? tmpn : getFximgData(fximg, 0x1);
         const len = Math.min(dst.length, h0);
+        const start = getDataIndex(fximg[0], 0x3).idx;
         if (len < 1) return;
         let i = x * h0,
             y = 0;
         if (i & 1) {
-            const ih4 = (i >>> 1) + 4;
+            const ih4 = (i >>> 1) + start;
             dst[y] = fximg[ih4] & NIB_MASK1;
             i++, y++;
         }
         for (; y < len - 1; y += 2) {
-            const ih4 = (i >>> 1) + 4;
+            const ih4 = (i >>> 1) + start;
             const val = fximg[ih4];
             dst[y + 1] = val & NIB_MASK1;
             dst[y] = val >>> 4;
             i += 2;
         }
         if (y < len) {
-            const ih4 = (i >>> 1) + 4;
+            const ih4 = (i >>> 1) + start;
             dst[y] = (i & 1) ? (fximg[ih4] & NIB_MASK1) : (fximg[ih4] >>> 4);
         }
     }
@@ -189,9 +261,9 @@ namespace fximage {
 
     // 1. drawLine (Bresenham ปรับปรุงตามที่ภัทรแนะนำ - ใช้ sx/sy ตรวจทิศทาง ไม่เช็คจุดเริ่ม=จุดจบ)
     export function drawLine(fximg: Buffer, x0: number, y0: number, x1: number, y1: number, color: number) {
-        if (x0 === x1 && y0 === y1) { this.setPixel(x0, y0, color); return; }
-        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
-        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        if (x0 === x1 && y0 === y1) { setPixel(fximg, x0, y0, color); return; }
+        const w = getFximgData(fximg, 0x0);
+        const h = getFximgData(fximg, 0x1);
         color &= 0xF;
 
         let dx = Math.abs(x1 - x0);
@@ -203,7 +275,7 @@ namespace fximage {
         while (1) {
             if (((sx < 0 && x0 < 0) || (sx > 0 && x0 >= w) && sx !== 0) || 
                 ((sy < 0 && y0 < 0) || (sy > 0 && y0 >= h) && sy !== 0)) break;
-            this.setPixel(x0, y0, color);
+            setPixel(fximg, x0, y0, color);
 
             // ตรวจทิศทาง + เกินจุดหมายหรือยัง (ป้องกัน overflow)
             if (((sx > 0 && x0 >= x1) || (sx < 0 && x0 <= x1) && sx !== 0) ||
@@ -226,15 +298,15 @@ namespace fximage {
 
     // 3. fillRect (เติมเต็ม)
     export function fillRect(fximg: Buffer, x: number, y: number, width: number, height: number, color: number) {
-        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
-        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const w = getFximgData(fximg, 0x0);
+        const h = getFximgData(fximg, 0x1);
         if (width < 1 || height < 1) return;
         color &= 0xF;
 
-        const sx = clip(x, 0, w - 1);
-        const ex = clip(x + width - 1, 0, w - 1);
-        const sy = clip(y, 0, h - 1);
-        const ey = clip(y + height - 1, 0, h - 1);
+        const sx = Math.clamp(0, w - 1, x);
+        const ex = Math.clamp(0, w - 1, x + width - 1);
+        const sy = Math.clamp(0, h - 1, y);
+        const ey = Math.clamp(0, h - 1, y + height - 1);
         if (sx > ex || sy > ey) return;
 
         const rowBuf = pins.createBuffer(h);
@@ -250,10 +322,10 @@ namespace fximage {
     // 4. fill (เติมทั้งภาพ)
     export function fill(fximg: Buffer, color: number) {
         color &= 0xF;
-        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const h = getFximgData(fximg, 0x1);
         const rowBuf = pins.createBuffer(h);
         rowBuf.fill(color);
-        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
+        const w = getFximgData(fximg, 0x0);
         for (let x = 0; x < w; x++) {
             setRow(fximg, x, rowBuf, h);
         }
@@ -262,8 +334,8 @@ namespace fximage {
     // 5. replace (แทนที่สี)
     export function replace(fximg: Buffer, fromColor: number, toColor: number) {
         fromColor &= 0xF; toColor &= 0xF;
-        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
-        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const w = getFximgData(fximg, 0x0);
+        const h = getFximgData(fximg, 0x1);
         const rowBuf = pins.createBuffer(h);
         for (let x = 0; x < w; x++) {
             getRow(fximg, x, rowBuf, h);
@@ -319,7 +391,7 @@ namespace fximage {
     export function drawOval(fximg: Buffer, cx: number, cy: number, rx: number, ry: number, color: number) {
         rx = Math.abs(rx); ry = Math.abs(ry);
         if (rx === 0 || ry === 0) return;
-        if (rx === ry) { this.drawCircle(cx, cy, rx, color); return; }
+        if (rx === ry) { drawCircle(fximg, cx, cy, rx, color); return; }
         cy -= (ry >>> 1);
         color &= 0xF;
 
@@ -341,10 +413,10 @@ namespace fximage {
         b1 =  (b * b) << 2; // b1 = 4b²
 
         do {
-            this.setPixel(x1, y0, color);
-            this.setPixel(x0, y0, color);
-            this.setPixel(x0, y1, color);
-            this.setPixel(x1, y1, color);
+            setPixel(fximg, x1, y0, color);
+            setPixel(fximg, x0, y0, color);
+            setPixel(fximg, x0, y1, color);
+            setPixel(fximg, x1, y1, color);
 
             let e2 = err << 1;
 
@@ -356,10 +428,10 @@ namespace fximage {
 
         // Draw tips for very flat ellipses
         while (y0 - y1 < b) {
-            this.setPixel(x0 - 1, y0, color);
-            this.setPixel(x1 + 1, y0++, color);
-            this.setPixel(x0 - 1, y1, color);
-            this.setPixel(x1 + 1, y1--, color);
+            setPixel(fximg, x0 - 1, y0, color);
+            setPixel(fximg, x1 + 1, y0++, color);
+            setPixel(fximg, x0 - 1, y1, color);
+            setPixel(fximg, x1 + 1, y1--, color);
         }
     }
 
@@ -419,31 +491,31 @@ namespace fximage {
         const tw = toFximg.getNumber(NumberFormat.UInt16LE, 2);
         const th = toFximg.getNumber(NumberFormat.UInt16LE, 0);
     
-        const rowSrc = pins.createBuffer(sh);
-        const rowDst = pins.createBuffer(th);
+        const rowFrom = pins.createBuffer(sh);
+        const rowTo = pins.createBuffer(th);
         for (let sx = 0; sx < sw; sx++) {
             let tx = dx + sx;
             if (tx < 0) continue;
             if (tx >= tw) break;
     
-            srcFximg.getRow(sx, rowSrc);
-            this.getRow(tx, rowDst);
+            getRow(fromFximg, sx, rowFrom);
+            getRow(toFximg, tx, rowTo);
     
             for (let sy = 0; sy < sh; sy++) {
                 let ty = dy + sy;
                 if (ty < 0) continue;
                 if (ty >= th) break;
-                if (transparent && rowSrc[sy] < 1) continue;
-                rowDst[ty] = rowSrc[sy];
+                if (transparent && rowFrom[sy] < 1) continue;
+                rowTo[ty] = rowFrom[sy];
             }
-            this.setRow(tx, rowDst);
+            setRow(toFximg, tx, rowTo);
         }
     }
 
     // 14. scale (nearest neighbor)
     export function scale(fximg: Buffer, newWidth: number, newHeight: number): Buffer {
-        const ow = fximg.getNumber(NumberFormat.UInt16LE, 2);
-        const oh = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const ow = getFximgData(fximg, 0x0);
+        const oh = getFximgData(fximg, 0x1);
         const dst = create(newWidth, newHeight);
         const dstRowBuf = pins.createBuffer(newHeight);
         const fximgRowBuf = pins.createBuffer(oh);
@@ -465,8 +537,8 @@ namespace fximage {
         n90 = n90 & 0x3;
         if (n90 === 0) return clone(fximg);
 
-        const w = fximg.getNumber(NumberFormat.UInt16LE, 2);
-        const h = fximg.getNumber(NumberFormat.UInt16LE, 0);
+        const w = getFximgData(fximg, 0x0);
+        const h = getFximgData(fximg, 0x1);
         const nw = (n90 & 1) ? h : w;
         const nh = (n90 & 1) ? w : h;
         const dst = create(nw, nh);
