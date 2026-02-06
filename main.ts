@@ -1,4 +1,4 @@
-
+/* test zone
 const imgfxa = FxImage.fromImage(img`
     . . . . c c c b b b b b . . . .
     . . c c b 4 4 4 4 4 4 b b b . .
@@ -19,3 +19,4 @@ const imgfxa = FxImage.fromImage(img`
 `)
 
 let mySprite = sprites.create(FxImage.toImage(imgfxa), SpriteKind.Player)
+*/
