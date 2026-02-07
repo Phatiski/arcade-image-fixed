@@ -235,19 +235,26 @@ namespace FxImage {
         if (i & 1) {
             src[y] &= 0xf;
             const ih4 = (i >>> 1) + start;
-            fximg[ih4] = (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
+            fximg[ih4] &= NIB_MASK0;
+            fximg[ih4] += (src[y] & NIB_MASK1);
             i++, y++;
         }
         for (; y < len - 1; y += 2) {
             src[y] &= 0xf, src[y + 1] &= 0xf;
             const ih4 = (i >>> 1) + start;
-            fximg[ih4] = (src[y] << 4) | (src[y + 1] & NIB_MASK1);
+            fximg[ih4] = (src[y] << 4);
+            fximg[ih4] += src[y + 1];
             i += 2;
         }
         if (y < len) {
             src[y] &= 0xf;
             const ih4 = (i >>> 1) + start;
-            fximg[ih4] = (i & 1) ? (src[y] << 4) | (fximg[ih4] & NIB_MASK1) : (fximg[ih4] & NIB_MASK0) | (src[y] & NIB_MASK1);
+            if (i & 1)
+                fximg[ih4] &= NIB_MASK1,
+                fximg[ih4] += (src[y] << 4);
+            else
+                fximg[ih4] &= NIB_MASK0,
+                fximg[ih4] += src[y];
         }
     }
 
