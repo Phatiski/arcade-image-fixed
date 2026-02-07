@@ -188,6 +188,19 @@ namespace FxImage {
         return imgs.slice();
     }
 
+    export function extractFrame(fximgs: Buffer, idx: number) {
+        const w = widthOf(fximgs);
+        const h = heightOf(fximgs);
+        const fximg = create(w, h);
+        const idxw = idx * w;
+        const tbuf = pins.createBuffer(h);
+        for (let x = 0; x < w; x++) {
+            getRow(fximgs, x + idxw, tbuf, h);
+            setRow(fximg, x, tbuf, h);
+        }
+        return fximg.slice();
+    }
+
     export function setPixel(fximg: Buffer, x: number, y: number, c: number) {
         if (isOutOfArea(x, y, widthOf(fximg) * lenghtOf(fximg), heightOf(fximg))) return;
         c &= 0xf;
@@ -459,12 +472,11 @@ namespace FxImage {
     }
 
     export function equalTo(fromFximg: Buffer, toFximg: Buffer) {
-        if (fromFximg.length < 5 || toFximg.length < 5) return false;
+        if (fromFximg.length < 1 || toFximg.length < 1) return false;
         if (fromFximg.length !== toFximg.length) return false;
-        let count = toFximg.length - 4;
-        for (let n = 4; n < toFximg.length; n++) if (fromFximg[n] === toFximg[n]) count--;
-        if (count > 0) return false;
-        return true;
+        if (widthOf(fromFximg) !== widthOf(toFximg) ||
+            heightOf(fromFximg) !== heightOf(toFximg)) return false
+        return fromFximg.equals(toFximg);
     }
 
     // 10. copyFrom (copy ทั้ง buffer ถ้าขนาดเท่ากัน)
@@ -472,10 +484,14 @@ namespace FxImage {
         const w = Math.min(widthOf(fromFximg), widthOf(toFximg));
         const h = Math.min(heightOf(fromFximg), heightOf(toFximg))
         if (w < 1 || h < 1) return;
+        if (fromFximg.length === toFximg.length) {
+            toFximg.write(0, fromFximg);
+            return;
+        }
         const buf = pins.createBuffer(h);
         for (let i = 0; i < w; i++) {
             getRow(fromFximg, i, buf, h);
-            setRow(toFximg, i, buf, h)
+            setRow(toFximg, i, buf, h);
         }
     }
 
