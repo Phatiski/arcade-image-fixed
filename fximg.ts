@@ -90,15 +90,15 @@ namespace FxImage {
         if (width > 0xff) ws++;
         if (width > 0xffff) ws++;
         //if (ws < 0x0 || ws > 0x3) ws &= 0x3;
-        if (ws > 0x0) header |= (ws << 4);
+        if (ws > 0x0) header += (ws << 4);
         if (height > 0xff) hs++;
         if (height > 0xffff) hs++;
         //if (hs < 0x0 || hs > 0x3) hs &= 0x3;
-        if (hs > 0x0) header |= (hs << 2);
+        if (hs > 0x0) header += (hs << 2);
         if (length > 0xff) ls++;
         if (length > 0xffff) ls++;
         //if (ls < 0x0 || ls > 0x3) ls &= 0x3;
-        if (ls > 0x0) header |= (ls);
+        if (ls > 0x0) header += (ls);
         const mdata = { header: header, ws, hs, ls, mds: 1 };
         mdata.mds += (1 << ws);
         mdata.mds += (1 << hs);
