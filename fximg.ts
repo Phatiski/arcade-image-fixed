@@ -43,6 +43,8 @@ namespace fximg {
 
     export function heightOf(fxpic: Buffer): number { return helper.fximgHeightOf(fxpic); };
 
+    export function startIndex(fxpic: Buffer): number { return helper.fximgStartIndex(fxpic); };
+
     //% blockId=fximg_size_length block="length of $fxpic"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
     export function lengthOf(fxpic: Buffer): number { return helper.fximgLengthOf(fxpic); };
@@ -100,5 +102,18 @@ namespace fximg {
     export function setRows(fxpic: Buffer, x: number, buf: Buffer, h?: number): void { helper.fximgSetRows(fxpic, x, buf, h); };
 
     export function getRows(fxpic: Buffer, x: number, buf: Buffer, h?: number): void { helper.fximgGetRows(fxpic, x, buf, h); };
+
+    export function fill(fxpic: Buffer, color: number) { helper.fximgFill(fxpic, color); };
+
+    export function replace(fxpic: Buffer, fromColor: number, toColor: number) { helper.fximgReplace(fxpic, fromColor, toColor); };
+
+    export function equals(fxpic: Buffer, otherfxpic: Buffer) { return helper.fximgEqualTo(fxpic, otherfxpic); };
+
+    export function drawLine(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, color: number) { helper.fximgDrawLine(fxpic, x0, y0, x1, y1, color); };
+
+    export function drawRect(fxpic: Buffer, x: number, y: number, width: number, height: number, color: number) { helper.fximgDrawRect(fxpic, x, y, width, height, color); };
+
+    export function fillRect(fxpic: Buffer, x: number, y: number, width: number, heigth: number, color: number) { helper.fximgFillRect(fxpic, x, y, width, heigth, color); };
+
 }
 

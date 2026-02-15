@@ -9,8 +9,10 @@
         "main.ts",
         "README.md",
         "assets.json",
-        "fximg.ts",
-        "fximg-utils.ts"
+        "fximg.helper.ts",
+        "fximg.base.ts",
+        "fximg.utils.ts",
+        "fximg.ts"
     ],
     "testFiles": [
         "test.ts"
