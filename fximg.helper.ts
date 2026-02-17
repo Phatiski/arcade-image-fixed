@@ -60,7 +60,7 @@ namespace helper {
         if (fximgIsValidHeader(fximg)) return;
         const buf = pins.createBuffer(1);
         buf[0] = fximg[1]
-        throw `this header is invalid db-hash: ${fximg[0]}, cur-hash: ${buf.hash(8) & 0xff}`
+        throw `this header is invalid stored-hash: ${fximg[0]}, computed-hash: ${buf.hash(8) & 0xff}`
     }
 
     function fximgMakeMetadataHash(fximg: Buffer) {
@@ -75,7 +75,7 @@ namespace helper {
         fximgHeaderCheck(fximg);
         if (fximgIsValidMetadata(fximg)) return;
         const hash = fximgMakeMetadataHash(fximg);
-        throw `this metadata is invalid db-hash: ${fximg[2]}, cur-hash: ${hash}`
+        throw `this metadata is invalid stored-hash: ${fximg[2]}, computed-hash: ${hash}`
     }
 
     // อ่าน flag
