@@ -50,6 +50,27 @@ namespace helper {
     export const fximgIsOutOfAreas = (pos: { x: number, y: number }[], w: number, h: number) => pos.every(v => (fximgIsOutOfArea(v.x, v.y, w, h)));
     export const fximgIsEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
 
+    const fximgHextxt = '0123456789ABCDEF'
+
+    const fximgNumToHex = (n: number) => {
+        if (!n) return "0";
+        let txt = ""
+        while (n)
+            txt += fximgHextxt[n & 0xf],
+            n >>>= 4;
+        return txt;
+    }
+
+    const fximgNumLeftZeroPad = (n: number, r: number) => {
+        let txt = fximgNumToHex(n);
+        if (txt.length < r) while (txt.length < r) txt = "0" + txt;
+        return txt;
+    }
+
+    const fximgHashAlert = (stored: number, computed: number) => {
+        throw `signture mismatch stored: ${"0x" + fximgNumLeftZeroPad(stored & 0xff, 2)}, computed ${"0x" + fximgNumLeftZeroPad(computed, 2)}`
+    }
+
     function fximgIsValidHeader(fximg: Buffer): boolean {
         const buf = pins.createBuffer(1);
         buf[0] = fximg[1];
@@ -60,7 +81,7 @@ namespace helper {
         if (fximgIsValidHeader(fximg)) return;
         const buf = pins.createBuffer(1);
         buf[0] = fximg[1]
-        throw `this header is invalid stored-hash: ${fximg[0]}, computed-hash: ${buf.hash(8) & 0xff}`
+        fximgHashAlert(fximg[0], buf.hash(8) & 0xff)
     }
 
     function fximgMakeMetadataHash(fximg: Buffer) {
@@ -75,7 +96,7 @@ namespace helper {
         fximgHeaderCheck(fximg);
         if (fximgIsValidMetadata(fximg)) return;
         const hash = fximgMakeMetadataHash(fximg);
-        throw `this metadata is invalid stored-hash: ${fximg[2]}, computed-hash: ${hash}`
+        fximgHashAlert(fximg[2], hash);
     }
 
     // อ่าน flag
