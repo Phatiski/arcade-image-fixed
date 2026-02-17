@@ -8,6 +8,7 @@ namespace helper {
 
     // 1. drawLine (Bresenham ปรับปรุงตามที่ภัทรแนะนำ - ใช้ sx/sy ตรวจทิศทาง ไม่เช็คจุดเริ่ม=จุดจบ)
     export function fximgDrawLine(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         color &= 0xF;
         if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color, idx); return; }
         idx = idx || 0;
@@ -41,6 +42,7 @@ namespace helper {
 
     // 2. drawRect (ขอบ)
     export function fximgDrawRect(fxpic: Buffer, x: number, y: number, width: number, height: number, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         if (width < 1 || height < 1) return;
         fximgDrawLine(fxpic, x, y, x + width - 1, y, color, idx);
         fximgDrawLine(fxpic, x + width - 1, y, x + width - 1, y + height - 1, color, idx);
@@ -50,6 +52,7 @@ namespace helper {
 
     // 3. fillRect (เติมเต็ม)
     export function fximgFillRect(fxpic: Buffer, x: number, y: number, width: number, height: number, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
         const w = fximgWidthOf(fxpic) * fximgLengthOf(fxpic);
@@ -74,6 +77,7 @@ namespace helper {
 
     // 6. drawCircle (midpoint circle - integer)
     export function fximgDrawCircle(fxpic: Buffer, cx: number, cy: number, r: number, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         if (r < 1) return;
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
@@ -104,6 +108,7 @@ namespace helper {
 
     // 7. fillCircle (ใช้ drawLine แนวนอน)
     export function fximgFillCircle(fxpic: Buffer, cx: number, cy: number, r: number, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         if (r < 1) return;
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
@@ -119,6 +124,7 @@ namespace helper {
 
     // 8. drawOval (midpoint oval - integer)
     export function fximgDrawOval(fxpic: Buffer, cx: number, cy: number, rx: number, ry: number, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         rx = Math.abs(rx); ry = Math.abs(ry);
         if (rx === 0 || ry === 0) return;
         if (rx === ry) { fximgDrawCircle(fxpic, cx, cy, rx, color, idx); return; }
@@ -169,6 +175,7 @@ namespace helper {
 
     // 9. fillOval
     export function fximgFillOval(fxpic: Buffer, cx: number, cy: number, rx: number, ry: number, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         if (rx < 1 || ry < 1) return;
         if (rx === ry) { fximgDrawCircle(fxpic, cx, cy, rx, color, idx); return; }
         idx = idx || 0;
@@ -196,6 +203,7 @@ namespace helper {
     }
 
     function fximgBulitDrawImage(from: Buffer, to: Buffer, dx: number, dy: number, transparent: boolean) {
+        if (fximgRoCheck(from)) return;
         const sw = fximgWidthOf(from)
         const sh = fximgHeightOf(from);
         const tw = fximgWidthOf(to)
@@ -488,6 +496,7 @@ namespace helper {
         x2: number, y2: number,
         color: number, idx?: number
     ) {
+        if (fximgRoCheck(fxpic)) return;
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
 
@@ -628,6 +637,7 @@ namespace helper {
         x3: number, y3: number,  // bottom-left
         transparent: boolean,
     ) {
+        if (fximgRoCheck(dst)) return;
         const srcW = fximgWidthOf(src);
         const srcH = fximgHeightOf(src);
         const dstTotalW = fximgWidthOf(dst) * fximgLengthOf(dst);

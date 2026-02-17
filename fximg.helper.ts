@@ -68,10 +68,22 @@ namespace helper {
         else fximg[0] &= ~0b10000000;
     }
 
-    export function fximgSetMetadataFrozen(fximg: Buffer, value: boolean) {
+    function fximgSetMetadataFrozen(fximg: Buffer, value: boolean) {
         //if (fximgIsReadonly(fximg)) return; // ถ้า readonly แล้ว ห้าม set flag อื่น
         if (value) fximg[0] |= 0b01000000;
         else fximg[0] &= ~0b01000000;
+    }
+
+    export function fximgInit(width: number, height: number, length: number, ro?: boolean) {
+        const md = fximgInitMD(width, height, length);
+        const fxpic = pins.createBuffer(md.start + ((1 + (width * height * length)) >>> 1));
+        fxpic[0] = md.header;
+        fximgSetData(fxpic, 0x0, width);
+        fximgSetData(fxpic, 0x1, height);
+        fximgSetData(fxpic, 0x2, length);
+        fximgSetMetadataFrozen(fxpic, true);
+        if (ro) fximgSetReadonly(fxpic, true);
+        return fxpic
     }
 
     export function fximgGetOffset(header: number, idxType: FximgDataIdx) {
@@ -100,7 +112,7 @@ namespace helper {
     }
     export function fximgSetData(fximg: Buffer, dataType: FximgDataIdx, v: number) {
         if (fximgIsMetadataFrozen(fximg)) {
-            throw `this ${fximgDataStr[dataType]} is read only`
+            throw `this ${fximgDataStr[dataType]} is immutable`
             return;
         }
         if (dataType >= 0x3) return;
@@ -146,7 +158,7 @@ namespace helper {
         } return 0;
     }
 
-    export function fximgInitFximgData(width: number, height: number, length: number) {
+    export function fximgInitMD(width: number, height: number, length: number) {
         if (width > 0xffffffff) width = 0xffffffff; if (height > 0xffffffff) height = 0xffffffff; if (length > 0xffffffff) length = 0xffffffff;
         let header = 0b00000000, ws = 0, hs = 0, ls = 0;
         if (width > 0xff) ws++;
@@ -161,11 +173,11 @@ namespace helper {
         if (length > 0xffff) ls++;
         //if (ls < 0x0 || ls > 0x3) ls &= 0x3;
         if (ls > 0x0) header += (ls);
-        const mdata = { header: header, ws, hs, ls, mds: 1 };
-        mdata.mds += (1 << ws);
-        mdata.mds += (1 << hs);
-        mdata.mds += (1 << ls);
-        return mdata;
+        const md = { header: header, ws, hs, ls, start: 1 };
+        md.start += (1 << ws);
+        md.start += (1 << hs);
+        md.start += (1 << ls);
+        return md;
     }
 
 }

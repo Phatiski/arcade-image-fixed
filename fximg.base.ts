@@ -1,23 +1,21 @@
 
 namespace helper {
 
-    export function fximgCreateFrame(width: number, height: number, length: number): Buffer {
+    export function fximgRoCheck(fxpic: Buffer) {
+        if (fximgIsReadonly(fxpic)) { throw "this fixed image is read-only"; return true; };
+        return false
+    }
+
+    export function fximgCreateFrame(width: number, height: number, length: number, ro?: boolean): Buffer {
         if (!length) length = 1;
-        const mdata = fximgInitFximgData(width, height, length)
-        const fximg = pins.createBuffer(mdata.mds + ((1 + (width * height * length)) >>> 1));
-        fximg[0] = mdata.header;
-        fximgSetData(fximg, 0x0, width);
-        fximgSetData(fximg, 0x1, height);
-        fximgSetData(fximg, 0x2, length);
-        fximgSetMetadataFrozen(fximg, true);
-        return fximg;
+        return fximgInit(width, height, length, ro);
     }
 
-    export function fximgCreate(width: number, height: number): Buffer {
-        return fximgCreateFrame(width, height, 1);
+    export function fximgCreate(width: number, height: number, ro?: boolean): Buffer {
+        return fximgCreateFrame(width, height, 1, ro);
     }
 
-    export function fximgFromImage(pic: Image): Buffer {
+    export function fximgFromImage(pic: Image, ro?: boolean): Buffer {
         const fxpic = fximgCreate(pic.width, pic.height);
         if (fximgIsEmptyImage(pic)) return fxpic;
         const h = pic.height
@@ -26,6 +24,7 @@ namespace helper {
             pic.getRows(x, buf);
             fximgSetRows(fxpic, x, buf, h);
         }
+        if (ro) fximgSetReadonly(fxpic, true);
         return fxpic;
     }
 
@@ -51,7 +50,7 @@ namespace helper {
         return cur
     }
 
-    export function fximgFromFrame(pics: Image[]): Buffer {
+    export function fximgFromFrame(pics: Image[], ro?: boolean): Buffer {
         const allSize = fximgMaxImgSizes(pics);
         const fxpics = fximgCreateFrame(allSize.width, allSize.height, pics.length);
         if (allSize.empty >= pics.length) return fxpics;
@@ -70,6 +69,7 @@ namespace helper {
             buf.fill(0);
             nw += allSize.width;
         }
+        if (ro) fximgSetReadonly(fxpics, ro);
         return fxpics;
     }
 
@@ -103,6 +103,7 @@ namespace helper {
     }
 
     export function fximgSetFrame(fxpics: Buffer, idx: number, fxpic: Buffer) {
+        if (fximgRoCheck(fxpics)) return;
         const fw = fximgWidthOf(fxpics), fh = fximgHeightOf(fxpics);
         const vw = fximgWidthOf(fxpic), vh = fximgHeightOf(fxpic);
         const idxw = idx * fw;
@@ -118,6 +119,7 @@ namespace helper {
     }
 
     export function fximgSetPixel(fxpic: Buffer, x: number, y: number, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         if (fximgIsOutOfArea(x, y, fximgWidthOf(fxpic), fximgHeightOf(fxpic))) return;
         idx = idx || 0; idx *= fximgWidthOf(fxpic)
         color &= 0xf;
@@ -143,6 +145,7 @@ namespace helper {
     }
 
     export function fximgSetRows(fxpic: Buffer, x: number, src: Buffer, h?: number) {
+        if (fximgRoCheck(fxpic)) return;
         h = h || fximgHeightOf(fxpic);
         const len = Math.min(src.length, h);
         if (len <= 0 || fximgIsOutOfRange(x, fximgWidthOf(fxpic) * fximgLengthOf(fxpic))) return;
@@ -231,6 +234,7 @@ namespace helper {
 
     // 4. fill (เติมทั้งภาพ)
     export function fximgFill(fxpic: Buffer, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         idx = idx || 0;
         if (idx, fximgLengthOf(fxpic)) return;
         color &= 0xF;
@@ -244,6 +248,7 @@ namespace helper {
 
     // 5. replace (แทนที่สี)
     export function fximgReplace(fxpic: Buffer, from: number, to: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
         from &= 0xF; to &= 0xF;
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
@@ -268,6 +273,7 @@ namespace helper {
 
     // 10. copyFrom (copy ทั้ง buffer ถ้าขนาดเท่ากัน)
     export function copyFrom(fxpic: Buffer, from: Buffer) {
+        if (fximgRoCheck(fxpic)) return;
         const w = Math.min(fximgWidthOf(from), fximgWidthOf(fxpic));
         const h = Math.min(fximgHeightOf(from), fximgHeightOf(fxpic))
         if (w < 1 || h < 1) return;
