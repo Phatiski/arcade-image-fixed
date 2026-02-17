@@ -68,7 +68,11 @@ namespace helper {
     }
 
     const fximgHashAlert = (stored: number, computed: number) => {
-        throw `signture mismatch stored: ${"0x" + fximgNumLeftZeroPad(stored & 0xff, 2)}, computed ${"0x" + fximgNumLeftZeroPad(computed, 2)}`
+        throw `
+signture mismatch:
+- stored: ${"0x" + fximgNumLeftZeroPad(stored & 0xff, 2)}
+- edited: ${"0x" + fximgNumLeftZeroPad(computed, 2)}
+`
     }
 
     function fximgIsValidHeader(fximg: Buffer): boolean {

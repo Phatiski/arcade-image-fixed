@@ -4,10 +4,7 @@
  * fixed image manager
  */
 //% block="fixed image" color="#18EC97" icon="\uf03e"
-namespace fximges { }
-
-//% blockNamespace="fximges"
-namespace fximg {
+namespace fximges {
 
     //               fximg/fxpic structure as buffer
     //
@@ -28,13 +25,20 @@ namespace fximg {
     // fximg pixel-data -> 1nibble per 1pixel (1-16 index color)
     // 
     //                       data structure
-    // 
-    //                 [ byte1     = header     ]
-    //                 [ byte1>2>4 = width      ]
-    //                 [ byte1>2>4 = height     ]
-    //                 [ byte1>2>4 = length     ]
-    //                 [ byte1<n   = nibblePixel]
+    //               [ byte1     = header'sHashDB  ]
+    //               [ byte1     = header          ]
+    //               [ byte1     = metadata'sHashDB]
+    //               [ byte1>2>4 = width           ]
+    //               [ byte1>2>4 = height          ]
+    //               [ byte1>2>4 = length          ]
+    //               [ byte1<n   = nibblePixelData ]
 
+}
+
+//% blockNamespace="fximges"
+namespace fximg {
+
+    /** */
     //% blockId=fximg_size_dimension block="$fxpic $dimension"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
     export function dimensionOf(fxpic: Buffer, dimension: image.Dimension): number { return helper.fximgDimensionOf(fxpic, dimension); };
@@ -45,6 +49,7 @@ namespace fximg {
 
     export function startIndex(fxpic: Buffer): number { return helper.fximgStartIndex(fxpic); };
 
+    /** */
     //% blockId=fximg_size_length block="length of $fxpic"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
     export function lengthOf(fxpic: Buffer): number { return helper.fximgLengthOf(fxpic); };
@@ -72,29 +77,35 @@ namespace fximg {
     //% group="export"
     export function toImage(fxpic: Buffer): Image { return helper.fximgToImage(fxpic); };
 
+    /** */
     //% blockId=fximg_from_frame block="$pics=lists_create_with to fxframe"
     //% pics.defl=image_picker
     //% group="import"
     export function fromFrame(pics: Image[]): Buffer { return helper.fximgFromFrame(pics); };
 
+    /** */
     //% blockId=fximg_to_frame block="$fxpics to frame"
     //% fxpics.shadow=variables_get fxpics.defl=fxpictures
     //% group="export"
     export function toFrame(fxpics: Buffer): Image[] { return helper.fximgToFrame(fxpics); };
 
+    /** */
     //% blockId=fximg_get_frame block="get $fxpics at $idx"
     //% fxpics.shadow=variables_get fxpics.defl=fxpictures
     export function getFrame(fxpics: Buffer, idx: number): Buffer { return helper.fximgGetFrame(fxpics, idx); };
 
+    /** */
     //% blockId=fximg_set_frame block="set $fxpics at $idx to $fxpic"
     //% fxpics.shadow=variables_get fxpics.defl=fxpictures
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
     export function setFrame(fxpics: Buffer, idx: number, fxpic: Buffer): void { helper.fximgSetFrame(fxpics, idx, fxpic); };
 
+    /** */
     //% blockId=fximg_set_pixel block="set $fxpic at x $x y $y to $color=colorindexpicker"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
     export function setPixel(fxpic: Buffer, x: number, y: number, color: number): void { helper.fximgSetPixel(fxpic, x, y, color); };
 
+    /** */
     //% blockId=fximg_get_pixel block="get $fxpic at x $x y $y"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
     export function getPixel(fxpic: Buffer, x: number, y: number): number { return helper.fximgGetPixel(fxpic, x, y); };
