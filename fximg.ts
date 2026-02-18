@@ -133,7 +133,7 @@ namespace fximg {
     export function replace(fxpic: Buffer, fromColor: number, toColor: number) { helper.fximgReplace(fxpic, fromColor, toColor); };
 
     //% blockId=fximg_trans_trim block=" trimming $fxpic|| in $trimMode mode"
-    //% fxpic.shadow=variables_get fxpic=fxpicture
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
     //% group="transformation"
     export function trim(fxpic: Buffer, trimMode?: FximgTrimType) { return helper.fximgTrim(fxpic, trimMode); };
 
