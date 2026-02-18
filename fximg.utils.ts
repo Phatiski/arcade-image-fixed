@@ -444,7 +444,7 @@ namespace helper {
         const newW = maxX - minX + 1;
         const newH = maxY - minY + 1;
         const trimmed = fximgCreate(newW, newH);
-        const sumH = (h - newH) >> 2;
+        const sumH = ((h - 1) - (newH - 1)) >> 2;
 
         // copy เฉพาะส่วนที่เหลือ
         for (let x = minX; x <= maxX; x++) {
