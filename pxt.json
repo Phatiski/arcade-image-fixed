@@ -1,6 +1,6 @@
 {
     "name": "arcade-image-fixed",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "fixed picture manager like image editor in lite version (inspired by: fixed grid trick in scratch-lang)",
     "dependencies": {
         "device": "*"
