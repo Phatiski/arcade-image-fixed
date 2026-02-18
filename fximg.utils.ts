@@ -449,7 +449,7 @@ namespace helper {
         // copy เฉพาะส่วนที่เหลือ
         for (let x = minX; x <= maxX; x++) {
             fximgGetRows(fxpic, x, rowBuf, h);
-            newRowBuf.write(-newH, rowBuf)
+            newRowBuf.write(newH, rowBuf)
             fximgSetRows(trimmed, x - minX, newRowBuf, newH);  // ตัดส่วนบนล่างอัตโนมัติเพราะ setRows ใช้ len = newH
         }
 
