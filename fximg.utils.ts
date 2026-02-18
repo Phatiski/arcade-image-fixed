@@ -445,7 +445,7 @@ namespace helper {
         const newH = maxY - minY + 1;
         const trimmed = fximgCreate(newW, newH);
         const newRowBuf = pins.createBuffer(newH);
-        const sumH = Math.abs(h - newH) >> 2;
+        const sumH = (h - newH) >> 2;
 
         // copy เฉพาะส่วนที่เหลือ
         for (let x = minX; x <= maxX; x++) {
