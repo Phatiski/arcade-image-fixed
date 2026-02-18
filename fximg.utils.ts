@@ -444,11 +444,13 @@ namespace helper {
         const newW = maxX - minX + 1;
         const newH = maxY - minY + 1;
         const trimmed = fximgCreate(newW, newH);
+        const newRowBuf = pins.createBuffer(newH);
 
         // copy เฉพาะส่วนที่เหลือ
         for (let x = minX; x <= maxX; x++) {
             fximgGetRows(fxpic, x, rowBuf, h);
-            fximgSetRows(trimmed, x - minX, rowBuf, newH);  // ตัดส่วนบนล่างอัตโนมัติเพราะ setRows ใช้ len = newH
+            newRowBuf.write(-newH, rowBuf)
+            fximgSetRows(trimmed, x - minX, newRowBuf, newH);  // ตัดส่วนบนล่างอัตโนมัติเพราะ setRows ใช้ len = newH
         }
 
         return trimmed;
