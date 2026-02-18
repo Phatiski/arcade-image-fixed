@@ -272,7 +272,7 @@ namespace helper {
     }
 
     // 10. copyFrom (copy ทั้ง buffer ถ้าขนาดเท่ากัน)
-    export function copyFrom(fxpic: Buffer, from: Buffer) {
+    export function fximgCopyFrom(fxpic: Buffer, from: Buffer) {
         if (fximgRoCheck(fxpic)) return;
         const w = Math.min(fximgWidthOf(from), fximgWidthOf(fxpic));
         const h = Math.min(fximgHeightOf(from), fximgHeightOf(fxpic))

@@ -1,4 +1,13 @@
 
+enum FximgTrimType {
+    //% block="both"
+    both  = 0x0,
+    //% block="x only"
+    xOnly = 0x1,
+    //% block="y only"
+    yOnly = 0x2,
+}
+
 namespace helper {
 
     /* // Helper: clip ค่าให้อยู่ในช่วง
@@ -193,13 +202,13 @@ namespace helper {
     }
 
     // 12. drawImage (ไม่ transparent)
-    export function fximgDrawImage(fxpic: Buffer, to: Buffer, dx: number, dy: number) {
-        fximgBulitDrawImage(fxpic, to, dx, dy, false);
+    export function fximgDrawImage(from: Buffer, fxpic: Buffer, dx: number, dy: number) {
+        fximgBulitDrawImage(from, fxpic, dx, dy, false);
     }
 
     // 13. drawTransparentImage (skip สี 0)
-    export function fximgDrawTransparentImage(fxpic: Buffer, to: Buffer, dx: number, dy: number) {
-        fximgBulitDrawImage(fxpic, to, dx, dy, true);
+    export function fximgDrawTransparentImage(from: Buffer, fxpic: Buffer, dx: number, dy: number) {
+        fximgBulitDrawImage(from, fxpic, dx, dy, true);
     }
 
     function fximgBulitDrawImage(from: Buffer, to: Buffer, dx: number, dy: number, transparent: boolean) {
@@ -355,7 +364,13 @@ namespace helper {
     }
 
     // Optional: trim ขอบโปร่งใส (สี 0) ออกให้เหลือเฉพาะส่วนที่มีเนื้อหา
-    export function fximgTrim(fxpic: Buffer): Buffer {
+    export function fximgTrim(fxpic: Buffer, trimMode?: FximgTrimType): Buffer {
+        switch (trimMode) {
+            case 0x0: break; 
+            case 0x1: break;
+            case 0x2: break;
+            default: trimMode = 0x0; break;
+        }
         const w = fximgWidthOf(fxpic);
         const h = fximgHeightOf(fxpic);
         if (w <= 0 || h <= 0) return fximgCreate(1, 1);
@@ -364,59 +379,67 @@ namespace helper {
 
         // หา leftmost column ที่มี non-zero
         let minX = w;
-        for (let x = 0; x < w; x++) {
-            fximgGetRows(fxpic, x, rowBuf, h);
-            for (let y = 0; y < h; y++) {
-                if (rowBuf[y] !== 0) {
-                    minX = x;
-                    break;
+        if (trimMode === 0x0 || trimMode === 0x1) {
+            for (let x = 0; x < w; x++) {
+                fximgGetRows(fxpic, x, rowBuf, h);
+                for (let y = 0; y < h; y++) {
+                    if (rowBuf[y] !== 0) {
+                        minX = x;
+                        break;
+                    }
                 }
-            }
             if (minX < w) break;  // พบแล้ว หยุด scan ต่อ
-        }
+            }
+        } else minX = 0;
 
         // หา rightmost column
         let maxX = -1;
-        for (let x = w - 1; x >= minX; x--) {
-            fximgGetRows(fxpic, x, rowBuf, h);
-            for (let y = 0; y < h; y++) {
-                if (rowBuf[y] !== 0) {
-                    maxX = x;
-                    break;
+        if (trimMode === 0x0 || trimMode === 0x1) {
+            for (let x = w - 1; x >= minX; x--) {
+                fximgGetRows(fxpic, x, rowBuf, h);
+                for (let y = 0; y < h; y++) {
+                    if (rowBuf[y] !== 0) {
+                        maxX = x;
+                        break;
+                    }
                 }
+                if (maxX >= 0) break;
             }
-            if (maxX >= 0) break;
-        }
+        } else maxX = w - 1;
 
         if (maxX < minX) return fximgCreate(1, 1); // ว่างทั้งหมด
 
         // หา topmost row (scan เฉพาะช่วง minX..maxX)
         let minY = h;
         const colBuf = pins.createBuffer(maxX - minX + 1);
-        for (let y = 0; y < h; y++) {
-            // อ่านเฉพาะช่วง x ที่มีเนื้อหา
-            for (let x = minX; x <= maxX; x++) colBuf[x - minX] = fximgGetPixel(fxpic, x, y);  // หรือ optimize ด้วย getRows แล้ว slice
-            for (let i = 0; i < colBuf.length; i++) {
-                if (colBuf[i] !== 0) {
-                    minY = y;
-                    break;
+        if (trimMode === 0x0 || trimMode === 0x2) {
+            for (let y = 0; y < h; y++) {
+                // อ่านเฉพาะช่วง x ที่มีเนื้อหา
+                for (let x = minX; x <= maxX; x++) colBuf[x - minX] = fximgGetPixel(fxpic, x, y);  // หรือ optimize ด้วย getRows แล้ว slice
+                for (let i = 0; i < colBuf.length; i++) {
+                    if (colBuf[i] !== 0) {
+                        minY = y;
+                        break;
+                    }
                 }
+                if (minY < h) break;
             }
-            if (minY < h) break;
-        }
+        } else minY = 0;
 
         // หา bottommost row
         let maxY = -1;
-        for (let y = h - 1; y >= minY; y--) {
-            for (let x = minX; x <= maxX; x++) colBuf[x - minX] = fximgGetPixel(fxpic, x, y);
-            for (let i = 0; i < colBuf.length; i++) {
-                if (colBuf[i] !== 0) {
-                    maxY = y;
-                    break;
+        if (trimMode === 0x0 || trimMode === 0x2) {
+            for (let y = h - 1; y >= minY; y--) {
+                for (let x = minX; x <= maxX; x++) colBuf[x - minX] = fximgGetPixel(fxpic, x, y);
+                for (let i = 0; i < colBuf.length; i++) {
+                    if (colBuf[i] !== 0) {
+                        maxY = y;
+                        break;
+                    }
                 }
+                if (maxY >= 0) break;
             }
-            if (maxY >= 0) break;
-        }
+        } else maxY = h - 1;
 
         const newW = maxX - minX + 1;
         const newH = maxY - minY + 1;
@@ -575,7 +598,7 @@ namespace helper {
         fximgDrawLine(fxpic, x1, y1, x0, y0, color, idx);
         fximgDrawLine(fxpic, x2, y2, x1, y1, color, idx);
         fximgDrawLine(fxpic, x3, y3, x2, y2, color, idx);
-        fximgDrawLine(fxpic, x3, y3, x0, y0, color, idx);
+        fximgDrawLine(fxpic, x0, y0, x3, y3, color, idx);
     }
 
     export function fximgFillPolygon4(
@@ -591,14 +614,14 @@ namespace helper {
     }
 
     export function fximgDrawDistortedImage(
-        fxpic: Buffer, to: Buffer,
+        from: Buffer, fxpic: Buffer,
         x0: number, y0: number,
         x1: number, y1: number,
         x2: number, y2: number,
         x3: number, y3: number,
     ) {
         fximgBuiltDrawDistortedImage(
-            fxpic, to,
+            from, fxpic,
             x0, y0, x1, y1,
             x2, y2, x3, y3,
             false
@@ -606,14 +629,14 @@ namespace helper {
     }
 
     export function fximgDrawTransDistortedImage(
-        fxpic: Buffer, to: Buffer,
+        from: Buffer, fxpic: Buffer,
         x0: number, y0: number,
         x1: number, y1: number,
         x2: number, y2: number,
         x3: number, y3: number,
     ) {
         fximgBuiltDrawDistortedImage(
-            fxpic, to,
+            from, fxpic,
             x0, y0, x1, y1,
             x2, y2, x3, y3,
             true

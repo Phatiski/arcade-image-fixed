@@ -41,6 +41,7 @@ namespace fximg {
     /** */
     //% blockId=fximg_size_dimension block="$fxpic $dimension"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="create"
     export function dimensionOf(fxpic: Buffer, dimension: image.Dimension): number { return helper.fximgDimensionOf(fxpic, dimension); };
 
     export function widthOf(fxpic: Buffer): number { return helper.fximgWidthOf(fxpic); };
@@ -52,6 +53,7 @@ namespace fximg {
     /** */
     //% blockId=fximg_size_length block="length of $fxpic"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="create"
     export function lengthOf(fxpic: Buffer): number { return helper.fximgLengthOf(fxpic); };
 
     /** */
@@ -92,39 +94,126 @@ namespace fximg {
     /** */
     //% blockId=fximg_get_frame block="get $fxpics at $idx"
     //% fxpics.shadow=variables_get fxpics.defl=fxpictures
+    //% group="drawing"
     export function getFrame(fxpics: Buffer, idx: number): Buffer { return helper.fximgGetFrame(fxpics, idx); };
 
     /** */
     //% blockId=fximg_set_frame block="set $fxpics at $idx to $fxpic"
     //% fxpics.shadow=variables_get fxpics.defl=fxpictures
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
     export function setFrame(fxpics: Buffer, idx: number, fxpic: Buffer): void { helper.fximgSetFrame(fxpics, idx, fxpic); };
 
     /** */
     //% blockId=fximg_set_pixel block="set $fxpic at x $x y $y to $color=colorindexpicker"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
     export function setPixel(fxpic: Buffer, x: number, y: number, color: number): void { helper.fximgSetPixel(fxpic, x, y, color); };
 
     /** */
     //% blockId=fximg_get_pixel block="get $fxpic at x $x y $y"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
     export function getPixel(fxpic: Buffer, x: number, y: number): number { return helper.fximgGetPixel(fxpic, x, y); };
 
     export function setRows(fxpic: Buffer, x: number, buf: Buffer, h?: number): void { helper.fximgSetRows(fxpic, x, buf, h); };
 
     export function getRows(fxpic: Buffer, x: number, buf: Buffer, h?: number): void { helper.fximgGetRows(fxpic, x, buf, h); };
 
+    /** */
+    //% blockId=fximg_color_fill block=" $fxpic fill $color=colorindexpicker"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
     export function fill(fxpic: Buffer, color: number) { helper.fximgFill(fxpic, color); };
 
+    /** */
+    //% blockId=fximg_trans_replace block=" replace color $fxpic from $fromColor=colorindexpicker to $toColor=colorindexpicker"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="transformation"
     export function replace(fxpic: Buffer, fromColor: number, toColor: number) { helper.fximgReplace(fxpic, fromColor, toColor); };
 
+    //% blockId=fximg_trans_trim block=" trimming $fxpic|| in $trimMode mode"
+    //% fxpic.shadow=variables_get fxpic=fxpicture
+    //% group="transformation"
+    export function trim(fxpic: Buffer, trimMode?: FximgTrimType) { return helper.fximgTrim(fxpic, trimMode); };
+
+    /** */
+    //% blockId=fximg_cond_equals block=" $fxpic is equal $otherfxpic"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% otherfxpic.shadow=variables_get otherfxpic.defl=otherfxpicture
+    //% group="compare"
     export function equals(fxpic: Buffer, otherfxpic: Buffer) { return helper.fximgEqualTo(fxpic, otherfxpic); };
 
+    /** */
+    //% blockId=fximg_get_clone block="clone $fxpic"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="create"
+    export function clone(fxpic: Buffer) { return helper.fximgClone(fxpic); };
+
+    /** */
+    //% blockId=fximg_set_clone block=" copy $fxpic from $otherfxpic"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% otherfxpic.shadow=variables_get otherfxpic.defl=otherfxpicture
+    //% group="drawing"
+    export function copyFrom(fxpic: Buffer, otherfxpic: Buffer) { return helper.fximgCopyFrom(fxpic, otherfxpic); };
+
+    /** */
+    //% blockId=fximg_draw_line block=" $fxpic draw line from x $x0 y $y0 to x $x1 y $y1 color $toColor=colorindexpicker"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
     export function drawLine(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, color: number) { helper.fximgDrawLine(fxpic, x0, y0, x1, y1, color); };
 
+    /** */
+    //% blockId=fximg_draw_rect block=" $fxpic draw rectangle at x $x y $y width $width height $height color $color=colorindexpicker"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
     export function drawRect(fxpic: Buffer, x: number, y: number, width: number, height: number, color: number) { helper.fximgDrawRect(fxpic, x, y, width, height, color); };
 
+    /** */
+    //% blockId=fximg_fill_rect block=" $fxpic fill rectangle at x $x y $y width $width height $height color $color=colorindexpicker"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
     export function fillRect(fxpic: Buffer, x: number, y: number, width: number, heigth: number, color: number) { helper.fximgFillRect(fxpic, x, y, width, heigth, color); };
+
+    /** */
+    //% blockId=fximg_draw_circle block=" $fxpic draw circle at x $x y $y radius $r color $color=colorindexpicker"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
+    export function drawCircle(fxpic: Buffer, x: number, y: number, r: number, color: number) { helper.fximgDrawCircle(fxpic, x, y, r, color); };
+
+    /** */
+    //% blockId=fximg_fill_circle block=" $fxpic fill circle at x $x y $y radius $r color $color=colorindexpicker"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
+    export function fillCircle(fxpic: Buffer, x: number, y: number, r: number, color: number) { helper.fximgFillCircle(fxpic, x, y, r, color); };
+
+    /** */
+    //% blockId=fximg_draw_oval block=" $fxpic draw oval at x $x y $y radius x $rx y $ry color $color=colorindexpicker"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
+    export function drawOval(fxpic: Buffer, x: number, y: number, rx: number, ry: number, color: number) { helper.fximgDrawOval(fxpic, x, y, rx, ry, color); };
+
+    /** */
+    //% blockId=fximg_fill_oval block=" $fxpic fill oval at x $x y $y radius x $rx y $ry color $color=colorindexpicker"
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
+    export function fillOval(fxpic: Buffer, x: number, y: number, rx: number, ry: number, color: number) { helper.fximgFillOval(fxpic, x, y, rx, ry, color); };
+
+    export function drawTriangle(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, color: number) { helper.fximgDrawTriangle(fxpic, x0, y0, x1, y1, x2, y2, color); };
+
+    export function fillTriangle(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, color: number) { helper.fximgFillTriangle(fxpic, x0, y0, x1, y1, x2, y2, color); };
+
+    export function drawPolygon4(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, color: number) { helper.fximgDrawPolygon4(fxpic, x0, y0, x1, y1, x2, y2, x3, y3, color); };
+
+    export function fillPolygon4(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, color: number) { helper.fximgFillPolygon4(fxpic, x0, y0, x1, y1, x2, y2, x3, y3, color); };
+
+    export function drawImage(from: Buffer, fxpic: Buffer, x: number, y: number) { helper.fximgDrawImage(from, fxpic, x, y); };
+
+    //% blockId=fximg_stamp_transparent block="stamp $from to $fxpic at x $x y $y"
+    //% from.shadow=fximg_from_image
+    //% fxpic.shadow=variables_get fxpic.defl=fxpicture
+    //% group="drawing"
+    export function drawTransparentImage(from: Buffer, fxpic: Buffer, x: number, y: number) { helper.fximgDrawTransparentImage(from, fxpic, x, y); };
 
 }
 
