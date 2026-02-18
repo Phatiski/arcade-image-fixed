@@ -37,6 +37,8 @@ namespace helper {
         return sineTable[(theta + 64) & 0xFF];  // cos = sin + 90° (64 ใน 256)
     }
 
+    const HASH_POWER = 16
+
     const fximgDataStr = {
         0x0: `width`,
         0x1: `height`,
@@ -44,10 +46,11 @@ namespace helper {
         0x3: `start`,
     };
 
-    export const fximgPos2idx = (a: number, amax: number, b: number) => (a * amax) + b;
-    export const fximgIsOutOfRange = (n: number, r: number) => (n < 0 || n >= r);
-    export const fximgIsOutOfArea = (x: number, y: number, w: number, h: number) => (fximgIsOutOfRange(x, w) || fximgIsOutOfRange(y, h));
-    export const fximgIsOutOfAreas = (pos: { x: number, y: number }[], w: number, h: number) => pos.every(v => (fximgIsOutOfArea(v.x, v.y, w, h)));
+    export function fximgIsOutOfRange(n: number, r: number) { return (n < 0 || n >= r); };
+    export function fximgIsOutOfArea(x: number, y: number, w: number, h: number) { return (fximgIsOutOfRange(x, w) || fximgIsOutOfRange(y, h)); };
+    export function fximgIsOutOfAreas(pos: { x: number, y: number }[], w: number, h: number) { return pos.every(v => (fximgIsOutOfArea(v.x, v.y, w, h))); };
+
+    export const fximgPos2idx = (a: number, r: number, b: number) => (a * r) + b;
     export const fximgIsEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
 
     const fximgHextxt = '0123456789ABCDEF'
@@ -75,21 +78,23 @@ signture mismatch:
 `
     }
 
+    function fximgMakeHeaderHash(fximg: Buffer) {
+        const buf = fximg.slice(1, 1);
+        return buf.hash(HASH_POWER) & 0xff;
+    }
+
     function fximgIsValidHeader(fximg: Buffer): boolean {
-        const buf = pins.createBuffer(1);
-        buf[0] = fximg[1];
-        return (buf.hash(8) & 0xff) === fximg[0];
+        return fximgMakeHeaderHash(fximg) === fximg[0];
     }
 
     function fximgHeaderCheck(fximg: Buffer) {
         if (fximgIsValidHeader(fximg)) return;
-        const buf = pins.createBuffer(1);
-        buf[0] = fximg[1]
-        fximgHashAlert(fximg[0], buf.hash(8) & 0xff)
+        const hash = fximgMakeHeaderHash(fximg)
+        fximgHashAlert(fximg[0], hash)
     }
 
     function fximgMakeMetadataHash(fximg: Buffer) {
-        return fximg.slice(3, fximgStartIndex(fximg) - 3).hash(8) & 0xff;
+        return fximg.slice(3, fximgStartIndex(fximg) - 3).hash(HASH_POWER) & 0xff;
     }
 
     function fximgIsValidMetadata(fximg: Buffer) {
@@ -122,9 +127,7 @@ signture mismatch:
         if (value) fximg[1] |= 0b10000000;
         else fximg[1] &= ~0b10000000;
         if (!changed) return;
-        const buf = pins.createBuffer(1);
-        buf[0] = fximg[1];
-        fximg[0] = buf.hash(8) & 0xff;
+        fximg[0] = fximgMakeHeaderHash(fximg);
     }
 
     function fximgSetMetadataFrozen(fximg: Buffer, value: boolean) {
@@ -134,9 +137,7 @@ signture mismatch:
         if (value) fximg[1] |= 0b01000000;
         else fximg[1] &= ~0b01000000;
         if (!changed) return;
-        const buf = pins.createBuffer(1);
-        buf[0] = fximg[1];
-        fximg[0] = buf.hash(8) & 0xff;
+        fximg[0] = fximgMakeHeaderHash(fximg);
     }
 
     export function fximgInit(width: number, height: number, length: number, ro?: boolean) {
@@ -244,7 +245,7 @@ signture mismatch:
         if (ls > 0x0) header += (ls);
         const buf = pins.createBuffer(1);
         buf[0] = header & 0xff;
-        const md = { header: header, ws, hs, ls, start: 3, hash: buf.hash(8) & 0xff };
+        const md = { header: header, ws, hs, ls, start: 3, hash: buf.hash(HASH_POWER) & 0xff };
         md.start += (1 << ws);
         md.start += (1 << hs);
         md.start += (1 << ls);
