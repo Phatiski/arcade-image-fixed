@@ -445,11 +445,12 @@ namespace helper {
         const newH = maxY - minY + 1;
         const trimmed = fximgCreate(newW, newH);
         const newRowBuf = pins.createBuffer(newH);
+        const sumH = Math.abs(h - newH) >> 2;
 
         // copy เฉพาะส่วนที่เหลือ
         for (let x = minX; x <= maxX; x++) {
             fximgGetRows(fxpic, x, rowBuf, h);
-            newRowBuf.write(newH, rowBuf)
+            newRowBuf.write(-sumH, rowBuf)
             fximgSetRows(trimmed, x - minX, newRowBuf, newH);  // ตัดส่วนบนล่างอัตโนมัติเพราะ setRows ใช้ len = newH
         }
 
