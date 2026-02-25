@@ -157,6 +157,10 @@ namespace fximg {
     //% group="drawing"
     export function copyFrom(fxpic: Buffer, otherfxpic: Buffer) { return helper.fximgCopyFrom(fxpic, otherfxpic); };
 
+    export function blitRow(dst: Buffer, xDst: number, yDst: number, wDst: number, hDst: number, src: Buffer, xSrc: number, hSrc: number) { helper.fximgBlitRow(dst, xDst, yDst, wDst, hDst, src, xSrc, hSrc); }
+
+    export function blit(dst: Buffer, xDst: number, yDst: number, wDst: number, hDst: number, src: Buffer, xSrc: number, ySrc: number, wSrc: number, hSrc: number, transparent?: boolean, check?: boolean) { return helper.fximgBlit(dst, xDst, yDst, wDst, hDst, src, xSrc, ySrc, wSrc, hSrc, transparent, check); };
+
     /** */
     //% blockId=fximg_draw_line block=" $fxpic draw line from x $x0 y $y0 to x $x1 y $y1 color $toColor=colorindexpicker"
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture

@@ -15,6 +15,129 @@ namespace helper {
         return v < minv ? minv : (v > maxv ? maxv : v);
     } */
 
+    // ใน fximg.utils.ts หรือไฟล์ blit-related
+    export function fximgBlitRow(
+        dst: Buffer,
+        xDst: number,
+        yDst: number,
+        wDst: number,   // ความกว้าง dst (ใช้เช็คขอบเขตเท่านั้น)
+        hDst: number,   // ความสูง dst (ใช้เช็คขอบเขต)
+        src: Buffer,
+        xSrc: number,
+        hSrc: number    // ความสูงที่จะ copy (จำนวน pixel ใน column)
+    ): void {
+        if (fximgRoCheck(dst)) return;
+
+        const dstW = fximgWidthOf(dst);
+        const dstFullH = fximgHeightOf(dst);
+        const srcW = fximgWidthOf(src);
+        const srcFullH = fximgHeightOf(src);
+
+        // Clip ง่าย ๆ
+        if (xDst < 0 || xDst >= dstW || xSrc < 0 || xSrc >= srcW) return;
+        if (yDst < 0) {
+            hSrc += yDst;
+            yDst = 0;
+        }
+        if (yDst + hSrc > dstFullH) hSrc = dstFullH - yDst;
+        if (hSrc <= 0) return;
+
+        // ใช้ buffer ชั่วคราวขนาด hSrc เพื่อ optimize (ไม่ต้อง buffer เต็ม dstH)
+        const buf = pins.createBuffer(hSrc);
+
+        // ดึง column จาก src (เริ่มจาก y=0 ของ buf)
+        fximgGetRows(src, xSrc, buf, hSrc);
+
+        if (yDst === 0) {
+            // Fast path: วางตรงหัว column
+            fximgSetRows(dst, xDst, buf, hSrc);
+        } else {
+            // Slow path: merge กับข้อมูลเดิมที่ yDst
+            const dstBuf = pins.createBuffer(dstFullH);
+            fximgGetRows(dst, xDst, dstBuf, dstFullH);
+
+            // copy เข้าไปที่ offset yDst
+            for (let i = 0; i < hSrc; i++) {
+                dstBuf[yDst + i] = buf[i];
+            }
+
+            fximgSetRows(dst, xDst, dstBuf, dstFullH);
+        }
+    }
+
+    export function fximgBlit(
+        dst: Buffer,
+        xDst: number, yDst: number,
+        wDst: number, hDst: number,
+        src: Buffer,
+        xSrc: number, ySrc: number,
+        wSrc: number, hSrc: number,
+        transparent?: boolean,
+        check?: boolean
+    ): boolean {
+        if (fximgRoCheck(dst)) return false;
+
+        const dstW = fximgWidthOf(dst);
+        const dstH = fximgHeightOf(dst);
+        const srcW = fximgWidthOf(src);
+        const srcH = fximgHeightOf(src);
+
+        // Clip rectangle ทั้ง src และ dst (เหมือนมาตรฐาน)
+        let clipWDst = wDst;
+        let clipHDst = hDst;
+        let clipWSrc = wSrc;
+        let clipHSrc = hSrc;
+
+        if (xDst < 0) { clipWDst += xDst; clipWSrc += xDst; xSrc -= xDst; xDst = 0; }
+        if (yDst < 0) { clipHDst += yDst; clipHSrc += yDst; ySrc -= yDst; yDst = 0; }
+        if (xDst + clipWDst > dstW) clipWDst = dstW - xDst;
+        if (yDst + clipHDst > dstH) clipHDst = dstH - yDst;
+
+        if (xSrc < 0) { clipWDst += xSrc; clipWSrc += xSrc; xSrc = 0; }
+        if (ySrc < 0) { clipHDst += ySrc; clipHSrc += ySrc; ySrc = 0; }
+        if (xSrc + clipWSrc > srcW) clipWSrc = srcW - xSrc;
+        if (ySrc + clipHSrc > srcH) clipHSrc = srcH - ySrc;
+
+        if (clipWDst <= 0 || clipHDst <= 0 || clipWSrc <= 0 || clipHSrc <= 0) return false;
+
+        // ถ้า transparent=false และ check=false → อาจ optimize เร็วขึ้น แต่เวอร์ชันนี้ทำแบบ general ก่อน
+
+        const rowBuf = pins.createBuffer(clipHDst);     // buffer ขนาดสูงสุดที่ copy จริง
+        const dstRow = pins.createBuffer(dstH);         // buffer เต็ม column ของ dst
+
+        let anyChange = false;
+
+        for (let dx = 0; dx < clipWDst; dx++) {
+            const sx = xSrc + dx;
+            const tx = xDst + dx;
+
+            // ดึง column ส่วนที่ต้องการจาก src (offset ySrc)
+            fximgGetRows(src, sx, rowBuf, clipHSrc);
+
+            fximgGetRows(dst, tx, dstRow, dstH);
+
+            let colChanged = false;
+
+            for (let dy = 0; dy < clipHDst; dy++) {
+                const syPixel = rowBuf[dy];  // pixel จาก src (หลัง shift ySrc แล้ว)
+
+                if (transparent && syPixel < 1) continue;
+
+                const oldPixel = dstRow[yDst + dy];
+                if (oldPixel === syPixel) continue;
+                dstRow[yDst + dy] = syPixel;
+                colChanged = true, anyChange = true;
+            }
+
+            if (!(colChanged || !check)) continue;
+            fximgSetRows(dst, tx, dstRow, dstH);
+
+            // ถ้า check=true และยังไม่มี change เลย → สามารถ break ได้เร็ว แต่เวอร์ชันนี้ scan หมดก่อน
+        }
+
+        return check ? anyChange : true;
+    }
+
     // 1. drawLine (Bresenham ปรับปรุงตามที่ภัทรแนะนำ - ใช้ sx/sy ตรวจทิศทาง ไม่เช็คจุดเริ่ม=จุดจบ)
     export function fximgDrawLine(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
