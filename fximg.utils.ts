@@ -120,16 +120,17 @@ namespace helper {
         const srcRow = pins.createBuffer(clipHSrc);     // buffer ขนาดสูงสุดที่ copy จริง
         const dstRow = pins.createBuffer(clipHDst);         // buffer เต็ม column ของ dst
 
-        let anyChange = false;
+        let anyChange = false, rowChange = false;
+        let curSx = -1;
 
-        for (let x = 0; x < clipWDst; x++) {
+        for (let x = 0; x < clipWDst; x++, rowChange = false) {
             const sx_f = xSrc + x * scaleX;
             const sx = (sx_f + 0.5)|0;  // หรือ Math.round() ก็ได้
 
             if (sx < 0)      continue;
             if (sx >= clipWSrc) break;
 
-            fximgGetRows(src, sx, srcRow, clipHSrc);
+            if (sx !== curSx) fximgGetRows(src, sx, srcRow, clipHSrc), curSx = sx;
             fximgGetRows(dst, xDst + x, dstRow, clipHDst);
 
             for (let y = 0; y < clipHDst; y++) {
@@ -147,9 +148,9 @@ namespace helper {
                 if (old === pixel) continue;
 
                 dstRow[yDst] = pixel;
-                anyChange = true;
+                anyChange = true, rowChange = true;
             }
-            fximgSetRows(dst, xDst + x, dstRow, clipHDst);
+            if (rowChange) fximgSetRows(dst, xDst + x, dstRow, clipHDst);
         }
 
         return check ? anyChange : true;
