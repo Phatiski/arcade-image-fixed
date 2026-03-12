@@ -83,6 +83,124 @@ namespace helper {
         const srcH = fximgHeightOf(src);
 
         // คำนวณ scale factor (จริง ๆ คือ ratio)
+        const scaleX = wSrc / wSrc;
+        const scaleY = hSrc / hSrc;
+
+        // Clip rectangle ทั้ง src และ dst (เหมือนมาตรฐาน)
+        let clipWDst = wDst;
+        let clipHDst = hDst;
+        let clipWSrc = wSrc;
+        let clipHSrc = hSrc;
+
+        if (xDst < 0) { clipWDst += xDst; clipWSrc += xDst; xSrc -= xDst; xDst = 0; }
+        if (yDst < 0) { clipHDst += yDst; clipHSrc += yDst; ySrc -= yDst; yDst = 0; }
+        if (xDst + clipWDst > dstW) clipWDst = dstW - xDst;
+        if (yDst + clipHDst > dstH) clipHDst = dstH - yDst;
+
+        if (xSrc < 0) { clipWDst += xSrc; clipWSrc += xSrc; xSrc = 0; }
+        if (ySrc < 0) { clipHDst += ySrc; clipHSrc += ySrc; ySrc = 0; }
+        if (xSrc + clipWSrc > srcW) clipWSrc = srcW - xSrc;
+        if (ySrc + clipHSrc > srcH) clipHSrc = srcH - ySrc;
+
+        if (clipWDst <= 0 || clipHDst <= 0 || clipWSrc <= 0 || clipHSrc <= 0) return false;
+
+        // ถ้า transparent=false และ check=false → อาจ optimize เร็วขึ้น แต่เวอร์ชันนี้ทำแบบ general ก่อน
+
+        const rowBuf = pins.createBuffer(clipHDst);     // buffer ขนาดสูงสุดที่ copy จริง
+        const dstRow = pins.createBuffer(dstH);         // buffer เต็ม column ของ dst
+
+        let anyChange = false;
+
+        // วนทุกพิกเซลปลายทาง (nearest neighbor)
+        for (let y = 0; y < dh; y++) {
+            const srcY_float = sy + y * scaleY;
+            const srcY = Math.floor(srcY_float + 0.5);  // หรือ Math.round() ก็ได้
+
+            if (srcY < 0 || srcY >= srcH) continue;
+
+            for (let x = 0; x < dw; x++) {
+                const srcX_float = sx + x * scaleX;
+                const srcX = Math.floor(srcX_float + 0.5);
+
+                if (srcX < 0 || srcX >= srcW) continue;
+
+                const pixel = fximgGetPixel(src, srcX, srcY);  // ต้องมี helper นี้ไหม? ถ้ายังไม่มีก็ implement ง่าย
+
+                if (transparent && pixel < 1) continue;
+
+                const old = fximgGetPixel(dst, dx + x, dy + y);
+                if (old === pixel) continue;
+
+                fximgSetPixel(dst, dx + x, dy + y, pixel);
+                anyChange = true;
+            }
+        }
+
+        return check ? anyChange : true;
+    }
+
+    // 1. drawLine (Bresenham ปรับปรุงตามที่ภัทรแนะนำ - ใช้ sx/sy ตรวจทิศทาง ไม่เช็คจุดเริ่ม=จุดจบ)
+    export function fximgDrawLine(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, color: number, idx?: number) {
+        if (fximgRoCheck(fxpic)) return;
+        color &= 0xF;
+        if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color, idx); return; }
+        idx = idx || 0;
+        if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic,))) return;
+        const w = fximgWidthOf(fxpic);
+        const h = fximgHeightOf(fxpic);
+        const iw = idx * w;
+        if ((x0 < 0 && x1 < 0) || (x0 >= w && x1 >= w) ||
+            (y0 < 0 && y1 < 0) || (y0 >= h && y1 >= h)) return;
+
+        let dx = Math.abs(x1 - x0);
+        let dy = Math.abs(y1 - y0);
+        let sx = Math.clamp(-1, 1, x1 - x0);
+        let sy = Math.clamp(-1, 1, y1 - y0);
+        let err = dx - dy;
+
+        while (1) {
+            if (((sx < 0 && x0 < 0) || (sx > 0 && x0 >= w) && sx !== 0) ||
+                ((sy < 0 && y0 < 0) || (sy > 0 && y0 >= h) && sy !== 0)) break;
+        const buf = pins.createBuffer(hSrc);
+
+        // ดึง column จาก src (เริ่มจาก y=0 ของ buf)
+        fximgGetRows(src, xSrc, buf, hSrc);
+
+        if (yDst === 0) {
+            // Fast path: วางตรงหัว column
+            fximgSetRows(dst, xDst, buf, hSrc);
+        } else {
+            // Slow path: merge กับข้อมูลเดิมที่ yDst
+            const dstBuf = pins.createBuffer(dstFullH);
+            fximgGetRows(dst, xDst, dstBuf, dstFullH);
+
+            // copy เข้าไปที่ offset yDst
+            for (let i = 0; i < hSrc; i++) {
+                dstBuf[yDst + i] = buf[i];
+            }
+
+            fximgSetRows(dst, xDst, dstBuf, dstFullH);
+        }
+    }
+
+    export function fximgBlit(
+        dst: Buffer,
+        xDst: number, yDst: number,
+        wDst: number, hDst: number,
+        src: Buffer,
+        xSrc: number, ySrc: number,
+        wSrc: number, hSrc: number,
+        transparent?: boolean,
+        check?: boolean
+    ): boolean {
+        if (fximgRoCheck(dst)) return false;
+
+        const dstW = fximgWidthOf(dst);
+        const dstH = fximgHeightOf(dst);
+        const srcW = fximgWidthOf(src);
+        const srcH = fximgHeightOf(src);
+
+        // คำนวณ scale factor (จริง ๆ คือ ratio)
         const scaleX = wSrc / wDst;
         const scaleY = hSrc / hdst;
 
