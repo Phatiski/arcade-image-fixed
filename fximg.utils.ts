@@ -33,6 +33,8 @@ namespace helper {
         const srcW = fximgWidthOf(src);
         const srcFullH = fximgHeightOf(src);
 
+        const scaleY = srcFullH / dstFullH;
+
         // Clip ง่าย ๆ
         if (xDst < 0 || xDst >= dstW || xSrc < 0 || xSrc >= srcW) return;
         if (yDst < 0) {
@@ -43,25 +45,31 @@ namespace helper {
         if (hSrc <= 0) return;
 
         // ใช้ buffer ชั่วคราวขนาด hSrc เพื่อ optimize (ไม่ต้อง buffer เต็ม dstH)
-        const buf = pins.createBuffer(hSrc);
+        const srcRow = pins.createBuffer(hSrc);
+        const dstRow = pins.createBuffer(dstFullH);
 
         // ดึง column จาก src (เริ่มจาก y=0 ของ buf)
-        fximgGetRows(src, xSrc, buf, hSrc);
+        fximgGetRows(src, xSrc, srcRow, hSrc);
 
         if (yDst === 0) {
             // Fast path: วางตรงหัว column
-            fximgSetRows(dst, xDst, buf, hSrc);
+            fximgSetRows(dst, xDst, srcRow, hSrc);
         } else {
             // Slow path: merge กับข้อมูลเดิมที่ yDst
-            const dstBuf = pins.createBuffer(dstFullH);
-            fximgGetRows(dst, xDst, dstBuf, dstFullH);
+            fximgGetRows(dst, xDst, dstRow, dstFullH);
 
             // copy เข้าไปที่ offset yDst
-            for (let i = 0; i < hSrc; i++) {
-                dstBuf[yDst + i] = buf[i];
+            for (let y = 0; y < hSrc; y++) {
+                const sy_f = + y * scaleY;
+                const sy = (sy_f + 0.5)|0;
+
+                if (sy < 0)  continue;
+                if (sy >= hSrc) break;
+
+                dstRow[yDst + sy] = srcRow[sy];
             }
 
-            fximgSetRows(dst, xDst, dstBuf, dstFullH);
+            fximgSetRows(dst, xDst, dstRow, dstFullH);
         }
     }
 
@@ -76,6 +84,9 @@ namespace helper {
         check?: boolean
     ): boolean {
         if (fximgRoCheck(dst)) return false;
+
+        if (wDst < 1 || hDst < 1) return false;
+        if (wSrc < 1 || hSrc < 1) return false;
 
         const dstW = fximgWidthOf(dst);
         const dstH = fximgHeightOf(dst);
@@ -113,18 +124,20 @@ namespace helper {
 
         for (let x = 0; x < clipWDst; x++) {
             const sx_f = xSrc + x * scaleX;
-            const sx = Math.floor(sx_f + 0.5);  // หรือ Math.round() ก็ได้
+            const sx = (sx_f + 0.5)|0;  // หรือ Math.round() ก็ได้
 
-            if (sx < 0 || sx >= clipWSrc) continue;
+            if (sx < 0)      continue;
+            if (sx >= clipWSrc) break;
 
-            fximgGetRows(src, sx, srcRow, srcRow.length);
-            fximgGetRows(dst, xDst + x, dstRow, dstRow.length);
+            fximgGetRows(src, sx, srcRow, clipHSrc);
+            fximgGetRows(dst, xDst + x, dstRow, clipHDst);
 
             for (let y = 0; y < clipHDst; y++) {
                 const sy_f = ySrc + y * scaleY;
-                const sy = Math.floor(sy_f + 0.5);
+                const sy = (sy_f + 0.5)|0;
 
-                if (sy < 0 || sy >= clipHSrc) continue;
+                if (sy < 0)      continue;
+                if (sy >= clipHDst) break;
 
                 const pixel = srcRow[sy];  // ต้องมี helper นี้ไหม? ถ้ายังไม่มีก็ implement ง่าย
 
@@ -136,7 +149,7 @@ namespace helper {
                 dstRow[yDst] = pixel;
                 anyChange = true;
             }
-            fximgSetRows(dst, xDst + x, dstRow, dstRow.length);
+            fximgSetRows(dst, xDst + x, dstRow, clipHDst);
         }
 
         return check ? anyChange : true;
