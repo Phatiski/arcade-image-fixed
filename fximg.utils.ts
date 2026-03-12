@@ -267,7 +267,7 @@ namespace helper {
         for (let dy = -r; dy <= r; dy++) {
             let y = cy + dy;
             if (y < 0 || y >= h) continue;
-            let dx = Math.sqrt(r * r - dy * dy) | 0;
+            let dx = psqrt(r * r - dy * dy) | 0;
             fximgDrawLine(fxpic, cx - dx, y, cx + dx, y, color, idx);
         }
     }
@@ -337,7 +337,7 @@ namespace helper {
         for (let dy = -ry; dy <= ry; dy++) {
             let y = cy + dy;
             if (y < 0 || y >= h) continue;
-            let dx = Math.sqrt(rx * rx * (1 - (dy * dy / ry2))) | 0;
+            let dx = psqrt(rx * rx * (1 - (dy * dy / ry2))) | 0;
             fximgDrawLine(fxpic, cx - dx, y, cx + dx, y, color, idx);
         }
     }
@@ -426,13 +426,13 @@ namespace helper {
         return dst;
     }
 
-    function fximgRotatedBounds(width: number, height: number, theta: number): number[] {
-        let s = Math.abs(fximgIsin(theta));   // |sin| * 120
-        let c = Math.abs(fximgIcos(theta));   // |cos| * 120
+    function fximgRotatedBounds(width: number, height: number, angle: number): number[] {
+        let s = Math.abs(fsin(angle));   // |sin| * 120
+        let c = Math.abs(fcos(angle));   // |cos| * 120
 
         // newW ≈ (|cos| * w + |sin| * h) / 120 + 1 (เผื่อ margin)
-        let newW = Math.idiv(c * width + s * height, 120) + 1;
-        let newH = Math.idiv(s * width + c * height, 120) + 1;
+        let newW = 1 + (c * width + s * height)|0;
+        let newH = 1 + (s * width + c * height)|0;
 
         // เพิ่ม margin เล็กน้อยเพื่อป้องกัน clipping จาก rounding
         newW += 2;
@@ -442,12 +442,12 @@ namespace helper {
     }
 
     // 16. rotate (theta 0-255 ด้วย sin/cos table)
-    export function fximgRotate(fxpic: Buffer, theta: number): Buffer {
+    export function fximgRotate(fxpic: Buffer, angle: number): Buffer {
         const ow = fximgWidthOf(fxpic)
         const oh = fximgHeightOf(fxpic);
 
         // หาขนาด bounding box ใหม่
-        const [nw, nh] = fximgRotatedBounds(ow, oh, theta);
+        const [nw, nh] = fximgRotatedBounds(ow, oh, angle);
 
         // สร้าง Buffer ใหม่ขนาดใหญ่ขึ้น
         const dst = fximgCreate(nw, nh);
@@ -459,16 +459,16 @@ namespace helper {
         const srcCx = ow >> 1;
         const srcCy = oh >> 1;
 
-        const s = fximgIsin(theta);
-        const c = fximgIcos(theta);
+        const s = fsin(angle);
+        const c = fcos(angle);
 
         // วาดทุกพิกเซลจาก dst → map กลับไป src (reverse rotation เพื่อ fill hole)
         // หรือ forward จาก src → dst (แบบเดิม แต่ shift offset)
         for (let dy = -dstCy; dy < nh - dstCy; dy++) {
             for (let dx = -dstCx; dx < nw - dstCx; dx++) {
                 // dx, dy คือ offset จาก center ใหม่
-                let ox = Math.idiv(dx * c - dy * s, 120);
-                let oy = Math.idiv(dx * s + dy * c, 120);
+                let ox = (dx * c - dy * s)|0;
+                let oy = (dx * s + dy * c)|0;
 
                 let sx = ox + srcCx;
                 let sy = oy + srcCy;

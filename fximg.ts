@@ -44,10 +44,13 @@ namespace fximg {
     //% group="create"
     export function dimensionOf(fxpic: Buffer, dimension: image.Dimension): number { return helper.fximgDimensionOf(fxpic, dimension); };
 
+    /** */
     export function widthOf(fxpic: Buffer): number { return helper.fximgWidthOf(fxpic); };
 
+    /** */
     export function heightOf(fxpic: Buffer): number { return helper.fximgHeightOf(fxpic); };
 
+    /** */
     export function startIndex(fxpic: Buffer): number { return helper.fximgStartIndex(fxpic); };
 
     /** */
@@ -116,8 +119,10 @@ namespace fximg {
     //% group="drawing"
     export function getPixel(fxpic: Buffer, x: number, y: number): number { return helper.fximgGetPixel(fxpic, x, y); };
 
+    /** */
     export function setRows(fxpic: Buffer, x: number, buf: Buffer, h?: number): void { helper.fximgSetRows(fxpic, x, buf, h); };
 
+    /** */
     export function getRows(fxpic: Buffer, x: number, buf: Buffer, h?: number): void { helper.fximgGetRows(fxpic, x, buf, h); };
 
     /** */
@@ -157,8 +162,10 @@ namespace fximg {
     //% group="drawing"
     export function copyFrom(fxpic: Buffer, otherfxpic: Buffer) { return helper.fximgCopyFrom(fxpic, otherfxpic); };
 
+    /** */
     export function blitRow(dst: Buffer, xDst: number, yDst: number, wDst: number, hDst: number, src: Buffer, xSrc: number, hSrc: number) { helper.fximgBlitRow(dst, xDst, yDst, wDst, hDst, src, xSrc, hSrc); }
 
+    /** */
     export function blit(dst: Buffer, xDst: number, yDst: number, wDst: number, hDst: number, src: Buffer, xSrc: number, ySrc: number, wSrc: number, hSrc: number, transparent?: boolean, check?: boolean) { return helper.fximgBlit(dst, xDst, yDst, wDst, hDst, src, xSrc, ySrc, wSrc, hSrc, transparent, check); };
 
     /** */
@@ -203,21 +210,42 @@ namespace fximg {
     //% group="drawing"
     export function fillOval(fxpic: Buffer, x: number, y: number, rx: number, ry: number, color: number) { helper.fximgFillOval(fxpic, x, y, rx, ry, color); };
 
+    /** */
     export function drawTriangle(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, color: number) { helper.fximgDrawTriangle(fxpic, x0, y0, x1, y1, x2, y2, color); };
 
+    /** */
     export function fillTriangle(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, color: number) { helper.fximgFillTriangle(fxpic, x0, y0, x1, y1, x2, y2, color); };
 
+    /** */
     export function drawPolygon4(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, color: number) { helper.fximgDrawPolygon4(fxpic, x0, y0, x1, y1, x2, y2, x3, y3, color); };
 
+    /** */
     export function fillPolygon4(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, color: number) { helper.fximgFillPolygon4(fxpic, x0, y0, x1, y1, x2, y2, x3, y3, color); };
-
+    
+    /** */
     export function drawImage(from: Buffer, fxpic: Buffer, x: number, y: number) { helper.fximgDrawImage(from, fxpic, x, y); };
 
+    /** */
     //% blockId=fximg_stamp_transparent block="stamp $from to $fxpic at x $x y $y"
     //% from.shadow=fximg_from_image
     //% fxpic.shadow=variables_get fxpic.defl=fxpicture
     //% group="drawing"
     export function drawTransparentImage(from: Buffer, fxpic: Buffer, x: number, y: number) { helper.fximgDrawTransparentImage(from, fxpic, x, y); };
+
+    /** */
+    export function drawDistortedImage(from: Buffer, to: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) { helper.fximgDrawDistortedImage(from, to, x0, y0, x1, y1, x2, y2, x3, y3); };
+
+    /** */
+    export function drawTransDistortedImage(from: Buffer, to: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) { helper.fximgDrawTransDistortedImage(from, to, x0, y0, x1, y1, x2, y2, x3, y3); };
+
+    /** */
+    export function rotate90(from: Buffer, n90: number): Buffer { return helper.fximgRotate90(from, n90); };
+
+    /** */
+    export function rotate(from: Buffer, angle: number): Buffer { return helper.fximgRotate(from, angle); };
+    
+    /** */
+    export function rotationFrame(from: Buffer, count: number): Buffer { return helper.fximgRotationFrame(from, count); };
 
 }
 

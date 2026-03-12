@@ -146,7 +146,7 @@ namespace helper {
 
     export function fximgSetRows(fxpic: Buffer, x: number, src: Buffer, h?: number) {
         if (fximgRoCheck(fxpic)) return;
-        h = h || fximgHeightOf(fxpic);
+        if (h == null) h = fximgHeightOf(fxpic);
         const len = Math.min(src.length, h);
         if (len <= 0 || fximgIsOutOfRange(x, fximgWidthOf(fxpic) * fximgLengthOf(fxpic))) return;
 
@@ -191,7 +191,7 @@ namespace helper {
     }
 
     export function fximgGetRows(fxpic: Buffer, x: number, dst: Buffer, h?: number) {
-        h = h || fximgHeightOf(fxpic);
+        if (h == null) h = fximgHeightOf(fxpic);
         const len = Math.min(dst.length, h);
         if (len <= 0 || fximgIsOutOfRange(x, fximgWidthOf(fxpic) * fximgLengthOf(fxpic))) return;
 
@@ -256,10 +256,10 @@ namespace helper {
         idx *= w;
         const h = fximgHeightOf(fxpic);
         const rowBuf = pins.createBuffer(h);
-        for (let x = 0; x < w; x++) {
+        for (let x = 0, rowChange = false; x < w; x++, rowChange = false) {
             fximgGetRows(fxpic, idx + x, rowBuf, h);
-            for (let y = 0; y < h; y++) if (rowBuf[y] === from) rowBuf[y] = to;
-            fximgSetRows(fxpic, idx + x, rowBuf, h);
+            for (let y = 0; y < h; y++) if (rowBuf[y] === from) rowBuf[y] = to, rowChange = true;
+            if (rowChange) fximgSetRows(fxpic, idx + x, rowBuf, h);
         }
     }
 

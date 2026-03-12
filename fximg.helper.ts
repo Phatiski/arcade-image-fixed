@@ -8,6 +8,106 @@ enum FximgDataIdx {
 
 namespace helper {
 
+    export function finv(x: number): number {
+        if (x === 0) return Infinity;
+        if (x < 0) return -finv(-x);
+
+        // 1. Range Scaling
+        // ปรับ x ให้อยู่ในช่วง [0.5, 1.0] เพื่อความแม่นยำของพหุนาม
+        // โดยการคูณด้วย 0.5 หรือ 2 (เทียบเท่าการเลื่อน Bit)
+        let scale = 1;
+        while (x < 0.5) x *= 2,   scale *= 2;
+        while (x > 1.0) x *= 0.5, scale *= 0.5;
+
+        /**
+         * 2. Polynomial Approximation (Degree 2)
+         * สูตร: f(x) ≈ a*x^2 + b*x + c
+         * สำหรับช่วง [0.5, 1.0] สัมประสิทธิ์ที่เหมาะสมคือ:
+         */
+        const a = 1.4545;
+        const b = -4.3636;
+        const c = 3.9091;
+
+        // คำนวณด้วย Horner's Method: (a*x + b)*x + c
+        let y = (a * x + b) * x + c;
+
+        // 3. Scaling กลับ
+        return y * scale;
+    }
+
+    const PI = 3.14159265;
+    const TWO_PI = 6.28318531;
+
+    /**
+     * Folded Polynomial Sine
+     * - ความแม่นยำ: ปานกลาง (Error ~0.001)
+     * - ช่วงผลลัพธ์: [-1.0, 1.0] แน่นอน
+     */
+    export function fsin(x: number): number {
+        // 1. Range Reduction & Folding
+        // ปรับ x ให้อยู่ในช่วง [-PI, PI]
+        x += PI;
+        x = x % TWO_PI;
+        if (x < 0) x += TWO_PI, x = x % TWO_PI;
+        x -= PI;
+        if (x > PI) x -= TWO_PI;
+        if (x < -PI) x += TWO_PI;
+
+        // 2. Optimized Polynomial
+        // สูตร: y = 1.2732 * x - 0.4053 * x * |x|
+        // ค่า 1.2732 คือ 4/PI และ 0.4053 คือ 4/PI^2
+        let y = 1.27323954 * x - 0.40528473 * x * (x < 0 ? -x : x);
+
+        // 3. ปรับสมดุล (Smoothing) เล็กน้อยเพื่อให้ผลลัพธ์ไม่เกิน 1
+        // ใช้การดัดโค้งด้วยพหุนามกำลัง 2 อีกชั้นแบบเบาๆ
+        // ค่า 0.225 เป็นค่าคงที่มาตรฐานที่ทำให้ error ต่ำที่สุด
+        return 0.225 * (y * (y < 0 ? -y : y) - y) + y;
+    }
+
+    /**
+     * Cosine โดยการเลื่อนเฟส
+     */
+    export function fcos(x: number): number {
+        return fsin(x + 1.57079633); // x + PI/2
+    }
+
+    export function psqrt(x: number): number {
+        if (x <= 0) return 0;
+        if (x === Infinity) return Infinity;
+
+        // 1. Range Scaling (แทนการหารด้วยการคูณ)
+        // เพื่อให้พหุนามแม่นยำที่สุด เราจะสเกล x ให้อยู่ในช่วง [0.5, 2.0]
+        let scale = 1;
+
+        // ใช้ Loop ปรับค่า scale (ใช้การคูณ/บรรทัดคำนวณสั้นๆ แทนการหาร)
+        // การคูณด้วย 0.25 หรือ 4 เร็วมากในระดับ CPU
+        while (x < 0.5) x *= 4,    scale *= 0.5;
+        while (x > 2.0) x *= 0.25, scale *= 2;
+
+        /**
+         * 2. High-Degree Polynomial Approximation
+         * สูตรพหุนามกำลัง 4 ที่ปรับจูนมาเพื่อช่วง [0.5, 2.0]
+         * f(x) = a + bx + cx^2 + dx^3 + ex^4
+         */
+        const a = 0.16541;
+        const b = 1.34135;
+        const c = -0.73949;
+        const d = 0.29323;
+        const e = -0.05282;
+
+        // ใช้ Horner's Method เพื่อประหยัดการคูณ (เหลือการคูณแค่ 4 ครั้ง)
+        // res = (((e*x + d)*x + c)*x + b)*x + a
+        let res = e;
+        res = res * x + d;
+        res = res * x + c;
+        res = res * x + b;
+        res = res * x + a;
+
+        // 3. Scale กลับไปยังค่าเดิม
+        return res * scale;
+    }
+
+/*
     // ค่า sin(theta * 2π / 256) * 127 (ประมาณ ±127) เพื่อให้เป็น int8-friendly
     // แต่เก็บเป็น number (int16) เพื่อความแม่นยำในการคำนวณ
     const sineTable: number[] = [
@@ -36,6 +136,7 @@ namespace helper {
     export function fximgIcos(theta: number): number {
         return sineTable[(theta + 64) & 0xFF];  // cos = sin + 90° (64 ใน 256)
     }
+    */
 
     const HASH_POWER = 16
 
