@@ -82,6 +82,10 @@ namespace helper {
         const srcW = fximgWidthOf(src);
         const srcH = fximgHeightOf(src);
 
+        // คำนวณ scale factor (จริง ๆ คือ ratio)
+        const scaleX = wSrc / wDst;
+        const scaleY = hSrc / hdst;
+
         // Clip rectangle ทั้ง src และ dst (เหมือนมาตรฐาน)
         let clipWDst = wDst;
         let clipHDst = hDst;
@@ -108,31 +112,29 @@ namespace helper {
         let anyChange = false;
 
         for (let dx = 0; dx < clipWDst; dx++) {
-            const sx = xSrc + dx;
-            const tx = xDst + dx;
+        // วนทุกพิกเซลปลายทาง (nearest neighbor)
+    for (let y = 0; y < dh; y++) {
+        const srcY_float = sy + y * scaleY;
+        const srcY = Math.floor(srcY_float + 0.5);  // หรือ Math.round() ก็ได้
 
-            // ดึง column ส่วนที่ต้องการจาก src (offset ySrc)
-            fximgGetRows(src, sx, rowBuf, clipHSrc);
+        if (srcY < 0 || srcY >= srcH) continue;
 
-            fximgGetRows(dst, tx, dstRow, dstH);
+        for (let x = 0; x < dw; x++) {
+            const srcX_float = sx + x * scaleX;
+            const srcX = Math.floor(srcX_float + 0.5);
 
-            let colChanged = false;
+            if (srcX < 0 || srcX >= srcW) continue;
 
-            for (let dy = 0; dy < clipHDst; dy++) {
-                const syPixel = rowBuf[dy];  // pixel จาก src (หลัง shift ySrc แล้ว)
+            const pixel = fximgGetPixel(src, srcX, srcY);  // ต้องมี helper นี้ไหม? ถ้ายังไม่มีก็ implement ง่าย
 
-                if (transparent && syPixel < 1) continue;
+            if (transparent && pixel < 1) continue;
 
-                const oldPixel = dstRow[yDst + dy];
-                if (oldPixel === syPixel) continue;
-                dstRow[yDst + dy] = syPixel;
-                colChanged = true, anyChange = true;
-            }
+            const old = fximgGetPixel(dst, dx + x, dy + y);
+            if (old === pixel) continue;
 
-            if (!(colChanged || !check)) continue;
-            fximgSetRows(dst, tx, dstRow, dstH);
-
-            // ถ้า check=true และยังไม่มี change เลย → สามารถ break ได้เร็ว แต่เวอร์ชันนี้ scan หมดก่อน
+            fximgSetPixel(dst, dx + x, dy + y, pixel);
+            anyChange = true;
+        }
         }
 
         return check ? anyChange : true;
