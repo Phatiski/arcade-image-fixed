@@ -641,18 +641,23 @@ namespace helper {
         color &= 0xF;
         const w = fximgWidthOf(fxpic);
         const h = fximgHeightOf(fxpic);
-        let v1 = new pt2(x0, y0), v2 = new pt2(x0, y0), v3 = new pt2(x2, y2);
-        if (fximgIsOutOfAreas([v1, v2, v3], w, h)) return;
+        let v = [new pt2(x0, y0), new pt2(x1, y1), new pt2(x2, y2)];
+        if (fximgIsOutOfAreas(v, w, h)) return;
         idx *= w;
 
         // ------------------- Sort vertices by x (left → right) -------------------
-  
-        if (v1.x > v2.x) [v1, v2] = [v2, v1];
-        if (v1.x > v3.x) [v1, v3] = [v3, v1];
-        if (v2.x > v3.x) [v2, v3] = [v3, v2];
+        
+        let tmpPt2: pt2 = null;
+        if (v[0].x > v[1].x) tmpPt2 = v[0], v[0] = v[1], v[1] = tmpPt2;// [v1, v2] = [v2, v1];
+        if (v[0].x > v[2].x) tmpPt2 = v[0], v[0] = v[2], v[2] = tmpPt2;// [v1, v3] = [v3, v1];
+        if (v[1].x > v[2].x) tmpPt2 = v[1], v[1] = v[2], v[2] = tmpPt2;// [v2, v3] = [v3, v2];
+
+        const [v1, v2, v3] = v;
 
         // ถ้าจุดซ้าย-ขวาเดียวกัน → degenerate → ข้าม
         if (v1.x === v3.x) return;
+
+        const fxpicRow = pins.createBuffer(h);
 
         const xMin = Math.max(0, v1.x);
         const xMax = Math.min(w - 1, v3.x);
@@ -669,7 +674,8 @@ namespace helper {
             return ya + Math.idiv((x - xa) * dy, dx);  // หรือใช้ fixed-point ถ้าต้องการแม่นกว่า
         }
 
-        for (let x = xMin; y <= xMax; ++x) {
+        for (let x = xMin; x <= xMax; ++x) {
+            fximgGetRows(fxpic, x, fxpicRow, h);
             // หา x-left และ x-right ของ scanline นี้ โดย interp จาก edges
 
             // Edge top-to-mid (v1-v2)
@@ -678,26 +684,24 @@ namespace helper {
             // Edge top-to-bottom (v1-v3) → long edge
             let y13 = edgeInterp(x, v1.x, v1.y, v3.x, v3.y);
 
-            // Edge mid-to-bottom (v2-v3) ถ้า y เกิน v2.y
-            let y23 = y <= v2.y ? x12 : edgeInterp(y, v2.x, v2.y, v3.x, v3.y);
+            // Edge mid-to-bottom (v2-v3) ถ้า x เกิน v2.x
+            let y23 = x <= v2.x ? y12 : edgeInterp(x, v2.x, v2.y, v3.x, v3.y);
 
-            // หา min/max x สำหรับ scanline นี้
-            let yTop    = Math.min(x12, Math.min(x13, x23));
-            let yBottom = Math.max(x12, Math.max(x13, x23));
+            // หา min/max y สำหรับ scanline นี้
+            let yTop    = Math.min(Math.min(y12, y13), y23);
+            let yBottom = Math.max(Math.max(y12, y13), y23);
 
-            yTop  = Math.max(0, xLeft);
-            yBottom = Math.min(w - 1, xRight);
+            yTop    = Math.max(0, yTop);
+            yBottom = Math.min(h - 1, yBottom);
+
+            if ((yTop + 0.4) > (yBottom - 0.4)) continue;
+
+            let rowChange = false;
 
             // เติมแนวนอน (horizontal span)
-            for (let x = xLeft; x <= xRight; ++x) {
-                // setPixel(x, y, color) → ต้องปรับตาม buffer nibble
-                const byteIdx = idx * w + (y * w + x) >> 1;  // ถ้า 4-bit/pixel
-                const shift = (x & 1) ? 0 : 4;  // นิยม high-nibble ก่อน หรือ low
-                const mask = 0xF << shift;
-                const val  = color << shift;
-
-                fxpic[byteIdx] = (fxpic[byteIdx] & \~mask) | (val & mask);
-            }
+            for (let y = yTop; y <= yBottom; ++y) if (fxpicRow[y] !== color) fxpicRow[y] = color, rowChange = true;
+            if (!rowChange) continue;
+            fximgSetRows(fxpic, x, fxpicRow, yBottom)
         }
     }
 
@@ -771,6 +775,8 @@ namespace helper {
 
     export class pt2 { constructor(public x: number, public y: number) { }; };
 
+    class pt2_2 { constructor(public x0: number, public y0: number, public x1: number, public y1: number) { }; };
+
     class pt2_4 { constructor(
         public x0: number, public y0: number, public x1: number, public y1: number,
         public x2: number, public y2: number, public x3: number, public y3: number,
@@ -807,13 +813,23 @@ namespace helper {
             // u สำหรับ column นี้ (left edge) และ column ถัดไป (right edge)
             const u0 = sx * srcInvW, u1 = (sx + 1) * srcInvW;
 
+            const pqu = new pt2_2(
+                (x1 - x0), (y1 - y0),
+                (x2 - x3), (y2 - y3),
+            )
+
             // คำนวณตำแหน่ง 4 มุมของ quad เล็ก ๆ ใน dst สำหรับ texel นี้
             const qu = new pt2_4(
-                x0 + (x1 - x0) * u0, y0 + (y1 - y0) * u0,
-                x3 + (x2 - x3) * u1, y3 + (y2 - y3) * u0,
-                x0 + (x1 - x0) * u0, y0 + (y1 - y0) * u1,
-                x3 + (x2 - x3) * u1, y3 + (y2 - y3) * u1,
+                x0 + pqu.x0 * u0, y0 + pqu.y0 * u0,
+                x3 + pqu.x1 * u1, y3 + pqu.y1 * u0,
+                x0 + pqu.x0 * u0, y0 + pqu.y0 * u1,
+                x3 + pqu.x1 * u1, y3 + pqu.y1 * u1,
             );
+
+            const pqv = new pt2_2(
+                (qu.x1 - qu.x0), (qu.y1 - qu.y0),
+                (qu.x3 - qu.x2), (qu.y3 - qu.y2),
+            )
 
             for (let sy = srcH - 1; sy > -1; sy--, srcRow.shift(1)) {
                 if ((srcRow.hash(0xffff) & 0xffff) === emptySrcRowHash) continue;
@@ -826,25 +842,25 @@ namespace helper {
                 // คำนวณ 4 จุดสุดท้ายของ quad ใน dst
                 const qv = new pt2_4(
                     // top-left
-                    (qu.x0 + (qu.x1 - qu.x0) * v0)|0,
-                    (qu.y0 + (qu.y1 - qu.y0) * v0)|0,
+                    Math.round(qu.x0 + pqv.x0 * v0),
+                    Math.round(qu.y0 + pqv.y0 * v0),
                     // top-right
-                    (qu.x2 + (qu.x3 - qu.x2) * v0)|0,
-                    (qu.y2 + (qu.y3 - qu.y2) * v0)|0,
+                    Math.round(qu.x2 + pqv.x1 * v0),
+                    Math.round(qu.y2 + pqv.y1 * v0),
                     // bottom-right
-                    (qu.x0 + (qu.x1 - qu.x0) * v1)|0,
-                    (qu.y0 + (qu.y1 - qu.y0) * v1)|0,
+                    Math.round(qu.x0 + pqv.x0 * v1),
+                    Math.round(qu.y0 + pqv.y0 * v1),
                     // bottom-left
-                    (qu.x2 + (qu.x3 - qu.x2) * v1)|0,
-                    (qu.y2 + (qu.y3 - qu.y2) * v1)|0,
+                    Math.round(qu.x2 + pqv.x1 * v1),
+                    Math.round(qu.y2 + pqv.y1 * v1),
                 );
 
                 // ถ้าทั้ง 4 จุดอยู่นอก → ข้าม
                 if (fximgIsOutOfAreas(qv.toArr, dstTotalW, dstH)) continue;
 
                 // วาด quad เล็ก ๆ ด้วย 2 triangle (หรือใช้ fillQuad ถ้ามี)
-                fximgFillTriangle(dst, qv.x1, qv.y1, qv.x0, qv.y0, qv.x3, qv.y3, color);
-                fximgFillTriangle(dst, qv.x2, qv.y2, qv.x0, qv.y0, qv.x3, qv.y3, color);
+                fximgFillTriangle(dst, qv.x0, qv.y0, qv.x1, qv.y1, qv.x3, qv.y3, color);
+                fximgFillTriangle(dst, qv.x2, qv.y2, qv.x1, qv.y1, qv.x3, qv.y3, color);
             }
         }
     }
