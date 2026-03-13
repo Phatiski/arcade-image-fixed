@@ -123,34 +123,32 @@ namespace helper {
         let anyChange = false, rowChange = false;
         let curSx = -1;
 
-        for (let x = 0; x < clipWDst; x++, rowChange = false) {
-            const sx_f = xSrc + x * scaleX;
-            const sx = (sx_f + 0.5)|0;  // หรือ Math.round() ก็ได้
+        for (let dx = 0; dx < clipWDst; dx++) {
+            const sx = xSrc + dx;
+            const tx = xDst + dx;
 
-            if (sx < 0)      continue;
-            if (sx >= clipWSrc) break;
+            // ดึง column ส่วนที่ต้องการจาก src (offset ySrc)
+            fximgGetRows(src, sx, rowBuf, clipHSrc);
 
-            if (sx !== curSx) fximgGetRows(src, sx, srcRow, clipHSrc), curSx = sx;
-            fximgGetRows(dst, xDst + x, dstRow, clipHDst);
+            fximgGetRows(dst, tx, dstRow, dstH);
 
-            for (let y = 0; y < clipHDst; y++) {
-                const sy_f = ySrc + y * scaleY;
-                const sy = (sy_f + 0.5)|0;
+            let colChanged = false;
 
-                if (sy < 0)      continue;
-                if (sy >= clipHDst) break;
+            for (let dy = 0; dy < clipHDst; dy++) {
+                const syPixel = rowBuf[dy];  // pixel จาก src (หลัง shift ySrc แล้ว)
 
-                const pixel = srcRow[sy];  // ต้องมี helper นี้ไหม? ถ้ายังไม่มีก็ implement ง่าย
+                if (transparent && syPixel < 1) continue;
 
-                if (transparent && pixel < 1) continue;
-
-                const old = dstRow[yDst + y];
-                if (old === pixel) continue;
-
-                dstRow[yDst] = pixel;
-                anyChange = true, rowChange = true;
+                const oldPixel = dstRow[yDst + dy];
+                if (oldPixel === syPixel) continue;
+                dstRow[yDst + dy] = syPixel;
+                colChanged = true, anyChange = true;
             }
-            if (rowChange) fximgSetRows(dst, xDst + x, dstRow, clipHDst);
+
+            if (!(colChanged || !check)) continue;
+            fximgSetRows(dst, tx, dstRow, dstH);
+
+            // ถ้า check=true และยังไม่มี change เลย → สามารถ break ได้เร็ว แต่เวอร์ชันนี้ scan หมดก่อน
         }
 
         return check ? anyChange : true;
