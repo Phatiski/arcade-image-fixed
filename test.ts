@@ -1,26 +1,25 @@
 // tests go here; this will not be compiled when this package is used as an extension.
 
+game.stats = true;
+control.EventContext.onStats("");
 
 const imgfxa = fximg.fromImage(img`
-    1 1 1 2 2 2 3 3 3 4 4 4 5 5 5
-    1 1 1 2 2 2 3 3 3 4 4 4 5 5 5
-    1 1 1 2 2 2 3 3 3 4 4 4 5 5 5
-    6 6 6 7 7 7 8 8 8 9 9 9 a a a
-    6 6 6 7 7 7 8 8 8 9 9 9 a a a
-    6 6 6 7 7 7 8 8 8 9 9 9 a a a
-    b b b c c c d d d e e e f f f
-    b b b c c c d d d e e e f f f
-    b b b c c c d d d e e e f f f
+    1 2 3 4 5
+    6 7 8 9 a
+    b c d e f
 `)
-const imgfxb = fximg.create(32, 32);
-fximg.fill(imgfxb, 1)
+const imgfxb = fximg.create(160, 120);
+//fximg.fill(imgfxb, 1)
 
-const mySprite = sprites.create(fximg.toImage(imgfxa), 0);
+const mySprite = sprites.create(fximg.toImage(imgfxb), 0);
 
 if (1) {
     //imgfxa[6] = 0x00
     //fximg.blit(imgfxb, 5, 3, 15, 9, imgfxa, 0, 0, 15, 9, false, false);
-    fximg.drawLine(imgfxb, -2, 0, 34, 2, 3)
+    //fximg.drawLine(imgfxb, -2, 0, 34, 2, 3);
+    //fximg.fillRect(imgfxb, 4, 4, 16, 16, 3);
+    //fximg.fillTriangle(imgfxb, 20, 30, 130, 80, 120, 50, 3);
+    fximg.drawDistortedImage(imgfxa, imgfxb, 0, 0, 0, 60, 60, 60, 60, 0)
     mySprite.setImage(fximg.toImage(imgfxb))
 }
 

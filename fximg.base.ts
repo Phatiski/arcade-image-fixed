@@ -146,7 +146,9 @@ namespace helper {
 
     export function fximgSetRows(fxpic: Buffer, x: number, src: Buffer, h?: number) {
         if (fximgRoCheck(fxpic)) return;
-        if (h == null) h = fximgHeightOf(fxpic);
+        const fh = fximgHeightOf(fxpic)
+        if (h == null) h = fh;
+        else h = Math.max(h, fh);
         const len = Math.min(src.length, h);
         if (len <= 0 || fximgIsOutOfRange(x, fximgWidthOf(fxpic) * fximgLengthOf(fxpic))) return;
 
@@ -160,38 +162,44 @@ namespace helper {
         if (colStartBit === 0) {
             // Fast path: aligned → copy byte-wise ได้เลย
             // src[0] ไป nybble สูงของ byte แรก, src[1] ไป nybble ต่ำ, ฯลฯ
-            while (srcIdx < pixelCount - 1) {
-                fxpic[dstByteIdx] = (src[srcIdx] << 4) | (src[srcIdx + 1] & 0xF);
-                srcIdx += 2;
-                dstByteIdx++;
+            for (;srcIdx < pixelCount - 1; srcIdx += 2, dstByteIdx++) {
+                const curByte = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0xF);
+                if (fxpic[dstByteIdx] === curByte) continue;
+                fxpic.setUint8(dstByteIdx, curByte);
             }
             // เหลือพิกเซลสุดท้าย (ถ้า len เป็น odd)
             if (srcIdx < pixelCount) {
-                fxpic[dstByteIdx] = (src[srcIdx] << 4) | (fxpic[dstByteIdx] & 0x0F);
+                const curByte = (src[srcIdx] << 4) + (fxpic[dstByteIdx] & 0x0F);
+                if (fxpic[dstByteIdx] === curByte) return;
+                fxpic.setUint8(dstByteIdx, curByte);
             }
             return;
         }
         // Misaligned path: เริ่มจาก nybble ต่ำของ byte แรก
         // จัดการ byte แรกแยก (merge กับ nybble เดิม)
         if (srcIdx < pixelCount) {
-            fxpic[dstByteIdx] = (fxpic[dstByteIdx] & 0xF0) | (src[srcIdx] & 0xF);
-            srcIdx++;
-            dstByteIdx++;
+            const curByte = (fxpic[dstByteIdx] & 0xF0) + (src[srcIdx] & 0xF);
+            if (fxpic[dstByteIdx] !== curByte) fxpic.setUint8(dstByteIdx, curByte);
+            srcIdx++; dstByteIdx++;
         }
         // จากนั้น copy แบบ aligned เหมือน fast path
-        while (srcIdx < pixelCount - 1) {
-            fxpic[dstByteIdx] = (src[srcIdx] << 4) | (src[srcIdx + 1] & 0xF);
-            srcIdx += 2;
-            dstByteIdx++;
+        for (;srcIdx < pixelCount - 1; srcIdx += 2, dstByteIdx++) {
+            const curByte = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0xF);
+            if (fxpic[dstByteIdx] === curByte) continue;
+            fxpic.setUint8(dstByteIdx, curByte);
         }
         // เหลือตัวสุดท้าย (ถ้ามี)
         if (srcIdx < pixelCount) {
-            fxpic[dstByteIdx] = (src[srcIdx] << 4) | (fxpic[dstByteIdx] & 0x0F);
+            const curByte = (src[srcIdx] << 4) + (fxpic[dstByteIdx] & 0x0F);
+            if (fxpic[dstByteIdx] === curByte) return;
+            fxpic.setUint8(dstByteIdx, curByte);
         }
     }
 
     export function fximgGetRows(fxpic: Buffer, x: number, dst: Buffer, h?: number) {
-        if (h == null) h = fximgHeightOf(fxpic);
+        const fh = fximgHeightOf(fxpic);
+        if (h == null) h = fh;
+        else h = Math.max(h, fh);
         const len = Math.min(dst.length, h);
         if (len <= 0 || fximgIsOutOfRange(x, fximgWidthOf(fxpic) * fximgLengthOf(fxpic))) return;
 
@@ -202,12 +210,10 @@ namespace helper {
 
         if (colStartBit === 0) {
             // Aligned: byte-wise extract
-            while (dstIdx < len - 1) {
+            for (;dstIdx < len - 1; dstIdx += 2, srcByteIdx++) {
                 const b = fxpic[srcByteIdx];
                 dst[dstIdx] = b >>> 4;
                 dst[dstIdx + 1] = b & 0xF;
-                dstIdx += 2;
-                srcByteIdx++;
             }
             if (dstIdx < len) {
                 dst[dstIdx] = fxpic[srcByteIdx] >>> 4;
@@ -220,12 +226,10 @@ namespace helper {
             dstIdx++;
             srcByteIdx++;
         }
-        while (dstIdx < len - 1) {
+        for (;dstIdx < len - 1; dstIdx += 2, srcByteIdx++) {
             const b = fxpic[srcByteIdx];
             dst[dstIdx] = b >>> 4;
             dst[dstIdx + 1] = b & 0xF;
-            dstIdx += 2;
-            srcByteIdx++;
         }
         if (dstIdx < len) {
             dst[dstIdx] = fxpic[srcByteIdx] >>> 4;

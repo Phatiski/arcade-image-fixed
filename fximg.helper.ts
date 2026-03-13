@@ -149,7 +149,7 @@ namespace helper {
 
     export function fximgIsOutOfRange(n: number, r: number) { return (n < 0 || n >= r); };
     export function fximgIsOutOfArea(x: number, y: number, w: number, h: number) { return (fximgIsOutOfRange(x, w) || fximgIsOutOfRange(y, h)); };
-    export function fximgIsOutOfAreas(pos: { x: number, y: number }[], w: number, h: number) { return pos.every(v => (fximgIsOutOfArea(v.x, v.y, w, h))); };
+    export function fximgIsOutOfAreas(pos: pt2[], w: number, h: number) { return pos.every(v => (fximgIsOutOfArea(v.x, v.y, w, h))); };
 
     export const fximgPos2idx = (a: number, r: number, b: number) => (a * r) + b;
     export const fximgIsEmptyImage = (img: Image) => img.equals(image.create(img.width, img.height));
