@@ -170,24 +170,35 @@ namespace helper {
         if ((x0 < 0 && x1 < 0) || (x0 >= w && x1 >= w) ||
             (y0 < 0 && y1 < 0) || (y0 >= h && y1 >= h)) return;
 
-        let dx = Math.abs(x1 - x0);
-        let dy = Math.abs(y1 - y0);
-        let sx = Math.clamp(-1, 1, x1 - x0);
-        let sy = Math.clamp(-1, 1, y1 - y0);
-        let err = dx - dy;
+        let steep = Math.abs(y1 - y0) > Math.abs(x1 - x0);
+  
+        if (steep) {
+            [x0, y0, x1, y1] = [y0, x0, y1, x1];
+        }
+  
+        if (x0 > x1) {
+            [x0, x1, y0, y1] = [x1, x0, y1, y0];
+        }
 
-        while (1) {
-            if (((sx < 0 && x0 < 0) || (sx > 0 && x0 >= w) && sx !== 0) ||
-                ((sy < 0 && y0 < 0) || (sy > 0 && y0 >= h) && sy !== 0)) break;
-            fximgSetPixel(fxpic, x0 + iw, y0, color);
+        const dx = Math.abs(x1 - x0);
+        const dy = Math.abs(y1 - y0);
+        let err = dx >> 1;   // หรือใช้ bit shift >>1 ถ้าต้องการ integer แท้ ๆ
+  
+        const ystep = y0 < y1 ? 1 : -1;
+        let y = y0;
 
-            // ตรวจทิศทาง + เกินจุดหมายหรือยัง (ป้องกัน overflow)
-            if (((sx > 0 && x0 >= x1) || (sx < 0 && x0 <= x1) && sx !== 0 && dx > dy) ||
-                ((sy > 0 && y0 >= y1) || (sy < 0 && y0 <= y1) && sy !== 0 && dy > dx)) break;
+        for (let x = x0; x <= x1; x++) {
+            if (steep) {
+                fximgSetPixel(fxpic, y, x, color);
+            } else {
+                fximgSetPixel(fxpic, x, y, color);
+            }
 
-            let e2 = err << 1;
-            if (e2 > -dy) { err -= dy; x0 += sx; }
-            if (e2 < dx) { err += dx; y0 += sy; }
+            err -= dy;
+            if (err < 0) {
+                y += ystep;
+                err += dx;
+            }
         }
     }
 
