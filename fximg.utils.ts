@@ -170,15 +170,15 @@ namespace helper {
         if ((x0 < 0 && x1 < 0) || (x0 >= w && x1 >= w) ||
             (y0 < 0 && y1 < 0) || (y0 >= h && y1 >= h)) return;
 
-        let steep = Math.abs(y1 - y0) > Math.abs(x1 - x0);
+        let steep = Math.abs(y1 - y0) > Math.abs(x1 - x0), tmp = 0;
   
-        if (steep) {
-            [x0, y0, x1, y1] = [y0, x0, y1, x1];
-        }
+        if (steep) //[x0, y0, x1, y1] = [y0, x0, y1, x1];
+            tmp = x0, x0 = y0, y0 = tmp,
+            tmp = x1, x1 = y1, y1 = tmp;
   
-        if (x0 > x1) {
-            [x0, x1, y0, y1] = [x1, x0, y1, y0];
-        }
+        if (x0 > x1) //[x0, x1, y0, y1] = [x1, x0, y1, y0];
+            tmp = x0, x0 = x1, x1 = tmp,
+            tmp = y0, y0 = y1, y1 = tmp;
 
         const dx = Math.abs(x1 - x0);
         const dy = Math.abs(y1 - y0);
@@ -187,17 +187,22 @@ namespace helper {
         const ystep = y0 < y1 ? 1 : -1;
         let y = y0;
 
-        for (let x = x0; x <= x1; x++) {
+        const nextErr = () => {
+            err -= dy;
+            if (err < 0)
+                y += ystep,
+                err += dx;
+        }
+
+        for (let x = x0; x <= x1; x++, nextErr()) {
             if (steep) {
+                if (y <  0 || x <  0) continue;
+                if (y >= w || x >= h) break;
                 fximgSetPixel(fxpic, y, x, color);
             } else {
+                if (x <  0 || y <  0) continue;
+                if (x >= w || y >= h) break;
                 fximgSetPixel(fxpic, x, y, color);
-            }
-
-            err -= dy;
-            if (err < 0) {
-                y += ystep;
-                err += dx;
             }
         }
     }

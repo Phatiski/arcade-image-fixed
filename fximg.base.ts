@@ -236,7 +236,7 @@ namespace helper {
     export function fximgFill(fxpic: Buffer, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         idx = idx || 0;
-        if (idx, fximgLengthOf(fxpic)) return;
+        if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
         color &= 0xF;
         const h = fximgHeightOf(fxpic);
         const rowBuf = pins.createBuffer(h);

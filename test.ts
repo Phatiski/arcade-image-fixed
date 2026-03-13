@@ -13,13 +13,14 @@ const imgfxa = fximg.fromImage(img`
     b b b c c c d d d e e e f f f
 `)
 const imgfxb = fximg.create(32, 32);
+fximg.fill(imgfxb, 1)
 
 const mySprite = sprites.create(fximg.toImage(imgfxa), 0);
 
 if (1) {
     //imgfxa[6] = 0x00
     //fximg.blit(imgfxb, 5, 3, 15, 9, imgfxa, 0, 0, 15, 9, false, false);
-    fximg.drawLine(imgfxb, 0, 0, 15, 2, 1)
+    fximg.drawLine(imgfxb, -2, 0, 34, 2, 3)
     mySprite.setImage(fximg.toImage(imgfxb))
 }
 
