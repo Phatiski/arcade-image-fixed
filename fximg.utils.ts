@@ -104,12 +104,12 @@ namespace helper {
         let clipHSrc = hSrc;
 
         if (xDst < 0) { clipWDst += xDst; clipWSrc += xDst; xSrc -= xDst; xDst = 0; }
-        if (yDst < 0) { clipHDst += yDst; clipHSrc += yDst; ySrc -= yDst; yDst = 0; }
+        if (yDst < 0) { clipHDst += yDst; clipWSrc += xDst; ySrc -= yDst; yDst = 0; }
         if (xDst + clipWDst > dstW) clipWDst = dstW - xDst;
         if (yDst + clipHDst > dstH) clipHDst = dstH - yDst;
 
         if (xSrc < 0) { clipWDst += xSrc; clipWSrc += xSrc; xSrc = 0; }
-        if (ySrc < 0) { clipHDst += ySrc; clipHSrc += ySrc; ySrc = 0; }
+        if (ySrc < 0) { clipHDst += ySrc; clipHSrc += xSrc; ySrc = 0; }
         if (xSrc + clipWSrc > srcW) clipWSrc = srcW - xSrc;
         if (ySrc + clipHSrc > srcH) clipHSrc = srcH - ySrc;
 
@@ -117,36 +117,39 @@ namespace helper {
 
         // ถ้า transparent=false และ check=false → อาจ optimize เร็วขึ้น แต่เวอร์ชันนี้ทำแบบ general ก่อน
 
-        const srcRow = pins.createBuffer(clipHSrc);     // buffer ขนาดสูงสุดที่ copy จริง
-        const dstRow = pins.createBuffer(clipHDst);         // buffer เต็ม column ของ dst
+        const srcRow = pins.createBuffer(srcH);     // buffer ขนาดสูงสุดที่ copy จริง
+        const dstRow = pins.createBuffer(dstH);     // buffer เต็ม column ของ dst
 
         let anyChange = false, rowChange = false;
         let curSx = -1;
 
-        for (let dx = 0; dx < clipWDst; dx++) {
-            const sx = xSrc + dx;
-            const tx = xDst + dx;
+        for (let x = 0; x < clipWDst; x++, rowChange = false) {
+            const sx = xSrc + ((x * scaleX) + 0.5)|0;
+            if (sx < 0)      continue;
+            if (sx >= clipWSrc) break;
+            const dx = xDst + x;
 
             // ดึง column ส่วนที่ต้องการจาก src (offset ySrc)
-            fximgGetRows(src, sx, rowBuf, clipHSrc);
+            if (sx !== curSx) fximgGetRows(src, sx, srcRow, srcH), curSx = sx;
+            fximgGetRows(dst, dx, dstRow, dstH);
 
-            fximgGetRows(dst, tx, dstRow, dstH);
+            for (let y = 0; y < clipHDst; y++) {
+                const sy = ySrc + ((y * scaleY) + 0.5)|0;
+                if (sy < 0)      continue;
+                if (sy >= clipHSrc) break;
+                const dy = yDst + y;
+                const newPixel = srcRow[sy];  // pixel จาก src (หลัง shift ySrc แล้ว)
 
-            let colChanged = false;
+                if (transparent && newPixel < 1) continue;
 
-            for (let dy = 0; dy < clipHDst; dy++) {
-                const syPixel = rowBuf[dy];  // pixel จาก src (หลัง shift ySrc แล้ว)
-
-                if (transparent && syPixel < 1) continue;
-
-                const oldPixel = dstRow[yDst + dy];
-                if (oldPixel === syPixel) continue;
-                dstRow[yDst + dy] = syPixel;
-                colChanged = true, anyChange = true;
+                const oldPixel = dstRow[dy];
+                if (oldPixel === newPixel) continue;
+                dstRow[dy] = newPixel;
+                rowChange = true, anyChange = true;
             }
 
-            if (!(colChanged || !check)) continue;
-            fximgSetRows(dst, tx, dstRow, dstH);
+            if (!rowChange) continue;
+            fximgSetRows(dst, dx, dstRow, dstH);
 
             // ถ้า check=true และยังไม่มี change เลย → สามารถ break ได้เร็ว แต่เวอร์ชันนี้ scan หมดก่อน
         }
@@ -179,8 +182,8 @@ namespace helper {
             fximgSetPixel(fxpic, x0 + iw, y0, color);
 
             // ตรวจทิศทาง + เกินจุดหมายหรือยัง (ป้องกัน overflow)
-            if (((sx > 0 && x0 >= x1) || (sx < 0 && x0 <= x1) && sx !== 0) ||
-                ((sy > 0 && y0 >= y1) || (sy < 0 && y0 <= y1) && sy !== 0)) break;
+            if (((sx > 0 && x0 >= x1) || (sx < 0 && x0 <= x1) && sx !== 0 && dx > dy) ||
+                ((sy > 0 && y0 >= y1) || (sy < 0 && y0 <= y1) && sy !== 0 && dy > dx)) break;
 
             let e2 = err << 1;
             if (e2 > -dy) { err -= dy; x0 += sx; }

@@ -1,6 +1,6 @@
 // tests go here; this will not be compiled when this package is used as an extension.
 
-/*
+
 const imgfxa = fximg.fromImage(img`
     1 1 1 2 2 2 3 3 3 4 4 4 5 5 5
     1 1 1 2 2 2 3 3 3 4 4 4 5 5 5
@@ -12,11 +12,14 @@ const imgfxa = fximg.fromImage(img`
     b b b c c c d d d e e e f f f
     b b b c c c d d d e e e f f f
 `)
+const imgfxb = fximg.create(32, 32);
 
 const mySprite = sprites.create(fximg.toImage(imgfxa), 0);
 
 if (1) {
-    imgfxa[6] = 0x00
-    mySprite.setImage(fximg.toImage(imgfxa))
+    //imgfxa[6] = 0x00
+    //fximg.blit(imgfxb, 5, 3, 15, 9, imgfxa, 0, 0, 15, 9, false, false);
+    fximg.drawLine(imgfxb, 0, 0, 15, 2, 1)
+    mySprite.setImage(fximg.toImage(imgfxb))
 }
-*/
+
