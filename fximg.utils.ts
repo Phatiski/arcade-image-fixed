@@ -806,17 +806,17 @@ namespace helper {
         const srcInvW = 1 / srcW;
         const srcInvH = 1 / srcH;
 
+        const pqu = new pt2_2(
+            (x1 - x0), (y1 - y0),
+            (x2 - x3), (y2 - y3),
+        )
+
         for (let sx = srcW - 1; sx > -1; sx--) {
             fximgGetRows(src, sx, srcRow, srcH);
             if ((srcRow.hash(0xffff) & 0xffff) === emptySrcRowHash) continue;
 
             // u สำหรับ column นี้ (left edge) และ column ถัดไป (right edge)
             const u0 = sx * srcInvW, u1 = (sx + 1) * srcInvW;
-
-            const pqu = new pt2_2(
-                (x1 - x0), (y1 - y0),
-                (x2 - x3), (y2 - y3),
-            )
 
             // คำนวณตำแหน่ง 4 มุมของ quad เล็ก ๆ ใน dst สำหรับ texel นี้
             const qu = new pt2_4(
