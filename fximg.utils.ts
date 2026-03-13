@@ -615,52 +615,6 @@ namespace helper {
         return trimmed;
     }
 
-    // คืน bounding box ที่ clip กับภาพแล้ว [minX, maxX, minY, maxY]
-    function fximgGetClippedBounds(
-        fxpic: Buffer,
-        xCoords: number[],  // x ของจุดต่าง ๆ
-        yCoords: number[]   // y ของจุดต่าง ๆ
-    ): number[] {
-        const totalW = fximgWidthOf(fxpic) * fximgLengthOf(fxpic);
-        const h = fximgHeightOf(fxpic);
-
-        let minX = totalW;
-        let maxX = -1;
-        let minY = h;
-        let maxY = -1;
-
-        for (let i = 0; i < xCoords.length; i++) {
-            const x = Math.clamp(0, totalW - 1, xCoords[i]);
-            const y = Math.clamp(0, h - 1, yCoords[i]);
-            minX = Math.min(minX, x);
-            maxX = Math.max(maxX, x);
-            minY = Math.min(minY, y);
-            maxY = Math.max(maxY, y);
-        }
-
-        if (minX > maxX || minY > maxY) return [0, -1, 0, -1]; // ว่าง
-        return [minX, maxX, minY, maxY];
-    }
-
-    // manual sort 3 จุดตาม x (คืน index เรียงจาก x น้อย → มาก)
-    function fximgSortTrianglePointsByX(
-        x0: number, y0: number,
-        x1: number, y1: number,
-        x2: number, y2: number
-    ): number[] {  // คืน [idxA, idxB, idxC] โดย xA <= xB <= xC
-        if (x0 <= x1 && x0 <= x2) {
-            if (x1 <= x2) return [0, 1, 2];
-            return [0, 2, 1];
-        }
-        if (x1 <= x0 && x1 <= x2) {
-            if (x0 <= x2) return [1, 0, 2];
-            return [1, 2, 0];
-        }
-        // x2 เป็น min
-        if (x0 <= x1) return [2, 0, 1];
-        return [2, 1, 0];
-    }
-
     export function fximgDrawTriangle(
         fxpic: Buffer,
         x0: number, y0: number,
@@ -700,50 +654,50 @@ namespace helper {
         // ถ้าจุดซ้าย-ขวาเดียวกัน → degenerate → ข้าม
         if (v1.x === v3.x) return;
 
-        const xMin = Math.max(0, Math.ceil(v1.x));
-        const xMax = Math.min(w - 1, Math.floor(v3.x));
+        const xMin = Math.max(0, v1.x);
+        const xMax = Math.min(w - 1, v3.x);
 
-        // Precompute inverse slopes (dx/dy)
-        const dy12 = v2.y - v1.y;
-        const dy13 = v3.y - v1.y;
-        const dy23 = v3.y - v2.y;
+        // ------------------- Split เป็น 2 ส่วน: flat-top/bottom ถ้ามี -------------------
+        // แต่เพื่อความง่าย ใช้ scanline ทั่วไป แยก 2 trapezoid
 
-        const invDy12 = dy12 !== 0 ? finv(dy12) : 0;
-        const invDy13 = dy13 !== 0 ? finv(dy13) : 0;
-        const invDy23 = dy23 !== 0 ? finv(dy23) : 0;
+        // สำหรับ integer-only: ใช้ Bresenham-like interpolation สำหรับแต่ละ edge
+        const edgeInterp = (x: number, xa: number, ya: number, xb: number, yb: number): number => {
+            if (xa === xb) return ya;
+            const dy = yb - ya;
+            const dx = xb - xa;
+            // integer DDA: คำนวณ x ที่ y นี้
+            return ya + Math.idiv((x - xa) * dy, dx);  // หรือใช้ fixed-point ถ้าต้องการแม่นกว่า
+        }
 
-        const fxpicRow = pins.createBuffer(h);
+        for (let x = xMin; y <= xMax; ++x) {
+            // หา x-left และ x-right ของ scanline นี้ โดย interp จาก edges
 
-        for (let x = xMin; x <= xMax; ++x) {
-            fximgGetRows(fxpic, x, fxpicRow, h);
-            // หา y bounds สำหรับคอลัมน์นี้
+            // Edge top-to-mid (v1-v2)
+            let y12 = edgeInterp(x, v1.x, v1.y, v2.x, v2.y);
 
-            // Edge 1-2
-            let yStart12 = v1.y + (x - v1.x) * (dy12 * invDy12);
-            let yEnd12   = v1.y + (x - v1.x) * (dy12 * invDy12);
-            if (v1.y > v2.y) [yStart12, yEnd12] = [yEnd12, yStart12];
+            // Edge top-to-bottom (v1-v3) → long edge
+            let y13 = edgeInterp(x, v1.x, v1.y, v3.x, v3.y);
 
-            // Edge 1-3 (long edge ส่วนใหญ่)
-            let yStart13 = v1.y + (x - v1.x) * (dy13 * invDy13);
-            let yEnd13   = v1.y + (x - v1.x) * (dy13 * invDy13);
-            if (v1.y > v3.y) [yStart13, yEnd13] = [yEnd13, yStart13];
+            // Edge mid-to-bottom (v2-v3) ถ้า y เกิน v2.y
+            let y23 = y <= v2.y ? x12 : edgeInterp(y, v2.x, v2.y, v3.x, v3.y);
 
-            // Edge 2-3 (ถ้า x อยู่ขวาของ v2)
-            let yStart23 = v2.y + (x - v2.x) * (dy23 * invDy23);
-            let yEnd23   = v2.y + (x - v2.x) * (dy23 * invDy23);
-            if (v2.y > v3.y) [yStart23, yEnd23] = [yEnd23, yStart23];
+            // หา min/max x สำหรับ scanline นี้
+            let yTop    = Math.min(x12, Math.min(x13, x23));
+            let yBottom = Math.max(x12, Math.max(x13, x23));
 
-            // หา min/max y ของคอลัมน์นี้
-            let yTop    = Math.ceil(Math.max(yStart12, Math.max(yStart13, (yStart23 ? yStart23 : -Infinity))));
-            let yBottom = Math.floor(Math.min(yEnd12, Math.min(yEnd13, (yEnd23 ? yEnd23 : Infinity))));
+            yTop  = Math.max(0, xLeft);
+            yBottom = Math.min(w - 1, xRight);
 
-            // Clip กับหน้าจอ (ถ้ามี)
-            yTop    = Math.max(0, yTop);
-            yBottom = Math.min(h - 1, yBottom);
+            // เติมแนวนอน (horizontal span)
+            for (let x = xLeft; x <= xRight; ++x) {
+                // setPixel(x, y, color) → ต้องปรับตาม buffer nibble
+                const byteIdx = idx * w + (y * w + x) >> 1;  // ถ้า 4-bit/pixel
+                const shift = (x & 1) ? 0 : 4;  // นิยม high-nibble ก่อน หรือ low
+                const mask = 0xF << shift;
+                const val  = color << shift;
 
-            // กรอกจากบนลงล่าง (inner loop = y)
-            for (let y = yTop; y <= yBottom; ++y) fxpicRow[y] = color;
-            fximgSetRows(fxpic, x, fxpicRow, h);
+                fxpic[byteIdx] = (fxpic[byteIdx] & \~mask) | (val & mask);
+            }
         }
     }
 
