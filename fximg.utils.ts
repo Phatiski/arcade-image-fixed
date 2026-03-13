@@ -687,63 +687,60 @@ namespace helper {
         color &= 0xF;
         const w = fximgWidthOf(fxpic);
         const h = fximgHeightOf(fxpic);
-        if (fximgIsOutOfAreas([new pt2(x0, y0), new pt2(x1, y1), new pt2(x2, y2)], w, h)) return;
+        let v1 = new pt2(x0, y0), v2 = new pt2(x0, y0), v3 = new pt2(x2, y2);
+        if (fximgIsOutOfAreas([v1, v2, v3], w, h)) return;
         idx *= w;
 
-        // bounding box clip
-        const [minX, maxX, minY, maxY] = fximgGetClippedBounds(fxpic, [x0, x1, x2], [y0, y1, y2]);
-        if (minX > maxX) return;
+        // ------------------- Sort vertices by x (left → right) -------------------
+  
+        if (v1.x > v2.x) [v1, v2] = [v2, v1];
+        if (v1.x > v3.x) [v1, v3] = [v3, v1];
+        if (v2.x > v3.x) [v2, v3] = [v3, v2];
 
-        // manual sort จุดตาม x
-        const order = fximgSortTrianglePointsByX(x0, y0, x1, y1, x2, y2);
-        const xs = [x0, x1, x2];
-        const ys = [y0, y1, y2];
-        const xa = xs[order[0]], ya = ys[order[0]];
-        const xb = xs[order[1]], yb = ys[order[1]];
-        const xc = xs[order[2]], yc = ys[order[2]];
+        // ถ้าจุดซ้าย-ขวาเดียวกัน → degenerate → ข้าม
+        if (v1.x === v3.x) return;
 
-        const rowBuf = pins.createBuffer(maxY);
+        const xMin = Math.max(0, Math.ceil(v1.x));
+        const xMax = Math.min( /* canvasWidth-1 */ 9999, Math.floor(v3.x));
 
-        for (let x = Math.max(0, minX | 0); x <= Math.min(w - 1, maxX | 0); x++) {
-            fximgGetRows(fxpic, idx + x, rowBuf, h);
+        // Precompute inverse slopes (dx/dy)
+        const dy12 = v2.y - v1.y;
+        const dy13 = v3.y - v1.y;
+        const dy23 = v3.y - v2.y;
 
-            // หา y range สำหรับ x นี้ (intersect กับ 3 ขอบ)
-            let yStart = h;
-            let yEnd = -1;
+        const invDy12 = dy12 !== 0 ? 1 / dy12 : 0;
+        const invDy13 = dy13 !== 0 ? 1 / dy13 : 0;
+        const invDy23 = dy23 !== 0 ? 1 / dy23 : 0;
 
-            // ขอบ AB
-            if (xa !== xb) {
-                const t = (x - xa) * finv(xb - xa);
-                if (t >= 0 && t <= 1) {
-                    const yab = ya + t * (yb - ya);
-                    yStart = Math.min(yStart, yab);
-                    yEnd = Math.max(yEnd, yab);
-                }
-            }
+        for (let x = xMin; x <= xMax; ++x) {
+            // หา y bounds สำหรับคอลัมน์นี้
 
-            // ขอบ AC
-            if (xa !== xc) {
-                const t = (x - xa) * finv(xc - xa);
-                if (t >= 0 && t <= 1) {
-                    const yac = ya + t * (yc - ya);
-                    yStart = Math.min(yStart, yac);
-                    yEnd = Math.max(yEnd, yac);
-                }
-            }
+            // Edge 1-2
+            let yStart12 = v1.y + (x - v1.x) * (dy12 * invDy12);
+            let yEnd12   = v1.y + (x - v1.x) * (dy12 * invDy12);
+            if (v1.y > v2.y) [yStart12, yEnd12] = [yEnd12, yStart12];
 
-            // ขอบ BC (เฉพาะเมื่อ x อยู่ระหว่าง xb กับ xc)
-            if (xb !== xc && x >= Math.min(xb, xc) && x <= Math.max(xb, xc)) {
-                const t = (x - xb) * finv(xc - xb);
-                const ybc = yb + t * (yc - yb);
-                yStart = Math.min(yStart, ybc);
-                yEnd = Math.max(yEnd, ybc);
-            }
+            // Edge 1-3 (long edge ส่วนใหญ่)
+            let yStart13 = v1.y + (x - v1.x) * (dy13 * invDy13);
+            let yEnd13   = v1.y + (x - v1.x) * (dy13 * invDy13);
+            if (v1.y > v3.y) [yStart13, yEnd13] = [yEnd13, yStart13];
 
-            if (yStart <= yEnd) {
-                const clipYStart = Math.max(minY, Math.ceil(yStart));
-                const clipYEnd = Math.min(maxY, Math.floor(yEnd));
-                for (let y = clipYStart; y <= clipYEnd; y++) if (rowBuf[y] !== color) rowBuf[y] = color;
-                fximgSetRows(fxpic, idx + x, rowBuf, clipYEnd);
+            // Edge 2-3 (ถ้า x อยู่ขวาของ v2)
+            let yStart23 = v2.y + (x - v2.x) * (dy23 * invDy23);
+            let yEnd23   = v2.y + (x - v2.x) * (dy23 * invDy23);
+            if (v2.y > v3.y) [yStart23, yEnd23] = [yEnd23, yStart23];
+
+            // หา min/max y ของคอลัมน์นี้
+            let yTop    = Math.ceil(Math.max(yStart12, yStart13, yStart23 ?? -Infinity));
+            let yBottom = Math.floor(Math.min(yEnd12, yEnd13, yEnd23 ?? Infinity));
+
+            // Clip กับหน้าจอ (ถ้ามี)
+            yTop    = Math.max(0, yTop);
+            yBottom = Math.min( h - 1, yBottom);
+
+            // กรอกจากบนลงล่าง (inner loop = y)
+            for (let y = yTop; y <= yBottom; ++y) {
+                setPixel(x, y);
             }
         }
     }
