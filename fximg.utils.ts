@@ -627,6 +627,8 @@ namespace helper {
         fximgDrawLine(fxpic, x0, y0, x2, y2, color, idx);
     }
 
+    const PI0_1 = Math.PI * 0.1
+
     export function fximgFillTriangle(
         fxpic: Buffer,
         x0: number, y0: number,
@@ -669,9 +671,9 @@ namespace helper {
         const edgeInterp = (x: number, xa: number, ya: number, xb: number, yb: number): number => {
             if (xa === xb) return ya;
             const dy = yb - ya;
-            const dx = xb - xa;
+            const invDx = finv((xb - xa) + PI0_1);
             // integer DDA: คำนวณ x ที่ y นี้
-            return ya + Math.idiv((x - xa) * dy, dx);  // หรือใช้ fixed-point ถ้าต้องการแม่นกว่า
+            return ya + (((x - xa) * dy) * invDx);  // หรือใช้ fixed-point ถ้าต้องการแม่นกว่า
         }
 
         for (let x = xMin; x <= xMax; ++x) {
@@ -691,10 +693,10 @@ namespace helper {
             let yTop    = Math.min(Math.min(y12, y13), y23);
             let yBottom = Math.max(Math.max(y12, y13), y23);
 
-            yTop    = Math.max(0, yTop);
-            yBottom = Math.min(h - 1, yBottom);
+            yTop    = Math.max(0, (yTop + 0.5)|0);
+            yBottom = Math.min(h - 1, yBottom|0);
 
-            if ((yTop + 0.4) > (yBottom - 0.4)) continue;
+            if (yTop > yBottom) continue;
 
             let rowChange = false;
 
