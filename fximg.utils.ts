@@ -701,18 +701,21 @@ namespace helper {
         if (v1.x === v3.x) return;
 
         const xMin = Math.max(0, Math.ceil(v1.x));
-        const xMax = Math.min( /* canvasWidth-1 */ 9999, Math.floor(v3.x));
+        const xMax = Math.min(w - 1, Math.floor(v3.x));
 
         // Precompute inverse slopes (dx/dy)
         const dy12 = v2.y - v1.y;
         const dy13 = v3.y - v1.y;
         const dy23 = v3.y - v2.y;
 
-        const invDy12 = dy12 !== 0 ? 1 / dy12 : 0;
-        const invDy13 = dy13 !== 0 ? 1 / dy13 : 0;
-        const invDy23 = dy23 !== 0 ? 1 / dy23 : 0;
+        const invDy12 = dy12 !== 0 ? finv(dy12) : 0;
+        const invDy13 = dy13 !== 0 ? finv(dy13) : 0;
+        const invDy23 = dy23 !== 0 ? finv(dy23) : 0;
+
+        const fxpicRow = pins.createBuffer(h);
 
         for (let x = xMin; x <= xMax; ++x) {
+            fximgGetRows(fxpic, x, fxpicRow, h);
             // หา y bounds สำหรับคอลัมน์นี้
 
             // Edge 1-2
@@ -731,17 +734,16 @@ namespace helper {
             if (v2.y > v3.y) [yStart23, yEnd23] = [yEnd23, yStart23];
 
             // หา min/max y ของคอลัมน์นี้
-            let yTop    = Math.ceil(Math.max(yStart12, yStart13, yStart23 ?? -Infinity));
-            let yBottom = Math.floor(Math.min(yEnd12, yEnd13, yEnd23 ?? Infinity));
+            let yTop    = Math.ceil(Math.max(yStart12, Math.max(yStart13, (yStart23 ? yStart23 : -Infinity))));
+            let yBottom = Math.floor(Math.min(yEnd12, Math.min(yEnd13, (yEnd23 ? yEnd23 : Infinity))));
 
             // Clip กับหน้าจอ (ถ้ามี)
             yTop    = Math.max(0, yTop);
-            yBottom = Math.min( h - 1, yBottom);
+            yBottom = Math.min(h - 1, yBottom);
 
             // กรอกจากบนลงล่าง (inner loop = y)
-            for (let y = yTop; y <= yBottom; ++y) {
-                setPixel(x, y);
-            }
+            for (let y = yTop; y <= yBottom; ++y) fxpicRow[y] = color;
+            fximgSetRows(fxpic, x, fxpicRow, h);
         }
     }
 

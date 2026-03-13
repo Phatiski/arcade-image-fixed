@@ -18,8 +18,8 @@ if (1) {
     //fximg.blit(imgfxb, 5, 3, 15, 9, imgfxa, 0, 0, 15, 9, false, false);
     //fximg.drawLine(imgfxb, -2, 0, 34, 2, 3);
     //fximg.fillRect(imgfxb, 4, 4, 16, 16, 3);
-    //fximg.fillTriangle(imgfxb, 20, 30, 130, 80, 120, 50, 3);
-    fximg.drawDistortedImage(imgfxa, imgfxb, 0, 0, 0, 60, 60, 60, 60, 0)
+    fximg.fillTriangle(imgfxb, 20, 30, 130, 80, 120, 50, 3);
+    //fximg.drawDistortedImage(imgfxa, imgfxb, 0, 0, 0, 60, 60, 60, 60, 0)
     mySprite.setImage(fximg.toImage(imgfxb))
 }
 
