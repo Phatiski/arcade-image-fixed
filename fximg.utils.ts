@@ -655,6 +655,9 @@ namespace helper {
         if (v[1].x > v[2].x) tmpPt2 = v[1], v[1] = v[2], v[2] = tmpPt2;// [v2, v3] = [v3, v2];
 
         const [v1, v2, v3] = v;
+        v1.x |= 0, v1.y |= 0;
+        v2.x |= 0, v2.y |= 0;
+        v3.x |= 0, v3.x |= 0;
 
         // ถ้าจุดซ้าย-ขวาเดียวกัน → degenerate → ข้าม
         if (v1.x === v3.x) return;
@@ -671,7 +674,7 @@ namespace helper {
         const edgeInterp = (x: number, xa: number, ya: number, xb: number, yb: number): number => {
             if (xa === xb) return ya;
             const dy = yb - ya;
-            const invDx = finv((xb - xa) + PI0_1);
+            const invDx = finv((xb - xa));
             // integer DDA: คำนวณ x ที่ y นี้
             return ya + (((x - xa) * dy) * invDx);  // หรือใช้ fixed-point ถ้าต้องการแม่นกว่า
         }
@@ -696,7 +699,7 @@ namespace helper {
             yTop    = Math.max(0, (yTop + 0.5)|0);
             yBottom = Math.min(h - 1, yBottom|0);
 
-            if (yTop > yBottom) continue;
+            if ((yTop + PI0_2) > yBottom) continue;
 
             let rowChange = false;
 
@@ -805,8 +808,8 @@ namespace helper {
         const emptySrcRowHash = srcRow.hash(0xffff) & 0xffff
 
         // Precompute inverse เพื่อความเร็ว
-        const srcInvW = 1 / srcW;
-        const srcInvH = 1 / srcH;
+        const srcInvW = finv(srcW);
+        const srcInvH = finv(srcH);
 
         const pqu = new pt2_2(
             (x1 - x0), (y1 - y0),

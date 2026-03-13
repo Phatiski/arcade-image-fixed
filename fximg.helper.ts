@@ -8,9 +8,14 @@ enum FximgDataIdx {
 
 namespace helper {
 
+    export const PI0_1     = Math.PI * 0.1;
+    export const PI0_2     = Math.PI * 0.2;
+    const PI0_0111_ = Math.PI * 0.111111111111111;
+
     export function finv(x: number): number {
         if (x === 0) return Infinity;
         if (x < 0) return -finv(-x);
+        x += PI0_0111_;
 
         // 1. Range Scaling
         // ปรับ x ให้อยู่ในช่วง [0.5, 1.0] เพื่อความแม่นยำของพหุนาม
