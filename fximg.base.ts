@@ -123,6 +123,7 @@ namespace helper {
         if (fximgIsOutOfArea(x, y, fximgWidthOf(fxpic), fximgHeightOf(fxpic))) return;
         idx = idx || 0; idx *= fximgWidthOf(fxpic)
         color &= 0xf;
+        x |= 0; y |= 0;
         const i = fximgPos2idx(x + idx, fximgHeightOf(fxpic), y);
         const ih4 = (i >>> 1) + fximgStartIndex(fxpic);
         const curv = fxpic[ih4]
@@ -137,6 +138,7 @@ namespace helper {
     export function fximgGetPixel(fxpic: Buffer, x: number, y: number, idx?: number) {
         if (fximgIsOutOfArea(x, y, fximgWidthOf(fxpic), fximgHeightOf(fxpic))) return 0;
         idx = idx || 0; idx *= fximgWidthOf(fxpic);
+        x |= 0; y |= 0;
         const i = fximgPos2idx(x + idx, fximgHeightOf(fxpic), y);
         const ih = i >>> 1;
         const ih4 = ih + fximgStartIndex(fxpic);
@@ -149,6 +151,7 @@ namespace helper {
         const fh = fximgHeightOf(fxpic)
         if (h == null) h = fh;
         else h = Math.max(h, fh);
+        x |= 0; h |= 0;
         const len = Math.min(src.length, h);
         if (len <= 0 || fximgIsOutOfRange(x, fximgWidthOf(fxpic) * fximgLengthOf(fxpic))) return;
 
@@ -200,6 +203,7 @@ namespace helper {
         const fh = fximgHeightOf(fxpic);
         if (h == null) h = fh;
         else h = Math.max(h, fh);
+        x |= 0; h |= 0;
         const len = Math.min(dst.length, h);
         if (len <= 0 || fximgIsOutOfRange(x, fximgWidthOf(fxpic) * fximgLengthOf(fxpic))) return;
 

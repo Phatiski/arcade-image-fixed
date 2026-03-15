@@ -8,18 +8,37 @@ const imgfxa = fximg.fromImage(img`
     6 7 8 9 a
     b c d e f
 `)
-const imgfxb = fximg.create(160, 120);
+const imgfxb = fximg.fromImage(scene.backgroundImage());
 //fximg.fill(imgfxb, 1)
-
-const mySprite = sprites.create(fximg.toImage(imgfxb), 0);
+const w = fximg.widthOf(imgfxb), h = fximg.heightOf(imgfxb);
 
 if (1) {
     //imgfxa[6] = 0x00
     //fximg.blit(imgfxb, 5, 3, 15, 9, imgfxa, 0, 0, 15, 9, false, false);
-    fximg.drawLine(imgfxb, 20, 32, 120, 87, 3);
+    //fximg.drawLine(imgfxb, 20, 32, 120, 87, 3);
     //fximg.fillRect(imgfxb, 4, 4, 16, 16, 3);
     //fximg.fillTriangle(imgfxb, 80, 30, 130, 80, 120, 20, 3);
-    //fximg.drawDistortedImage(imgfxa, imgfxb, 0, 0, 0, 60, 60, 60, 60, 0)
-    mySprite.setImage(fximg.toImage(imgfxb))
+    fximg.drawDistortedImage(imgfxa, imgfxb, 20, 10, 20, 60, 10, 80, 80, 60)
+    //fximg.drawDistortedImage(imgfxa, imgfxb,
+    //    randint(0, w - 1), randint(0, h - 1),
+    //    randint(0, w - 1), randint(0, h - 1),
+    //    randint(0, w - 1), randint(0, h - 1),
+    //    randint(0, w - 1), randint(0, h - 1),
+    //)
+    scene.setBackgroundImage(fximg.toImage(imgfxb))
 }
 
+/*
+basic.forever(() => {
+    let j = randint(1, 4);
+    for (let i = 0; i < j; i++) {
+        fximg.drawDistortedImage(imgfxa, imgfxb,
+            randint(0, w - 1), randint(0, h - 1),
+            randint(0, w - 1), randint(0, h - 1),
+            randint(0, w - 1), randint(0, h - 1),
+            randint(0, w - 1), randint(0, h - 1),
+        )
+    }
+    scene.setBackgroundImage(fximg.toImage(imgfxb));
+})
+*/

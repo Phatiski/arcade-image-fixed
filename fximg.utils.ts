@@ -61,9 +61,9 @@ namespace helper {
             // copy เข้าไปที่ offset yDst
             for (let y = 0; y < hSrc; y++) {
                 const sy_f = + y * scaleY;
-                const sy = (sy_f + 0.5)|0;
+                const sy = (sy_f + 0.5) | 0;
 
-                if (sy < 0)  continue;
+                if (sy < 0) continue;
                 if (sy >= hSrc) break;
 
                 dstRow[yDst + sy] = srcRow[sy];
@@ -84,6 +84,8 @@ namespace helper {
         check?: boolean
     ): boolean {
         if (fximgRoCheck(dst)) return false;
+        xDst |= 0, yDst |= 0, wDst |= 0, hDst |= 0;
+        xSrc |= 0, ySrc |= 0, wSrc |= 0, hSrc |= 0;
 
         if (wDst < 1 || hDst < 1) return false;
         if (wSrc < 1 || hSrc < 1) return false;
@@ -126,8 +128,8 @@ namespace helper {
         let curSx = -1;
 
         for (let x = 0; x < clipWDst; x++, rowChange = false) {
-            const sx = xSrc + ((x * scaleX) + 0.5)|0;
-            if (sx < 0)      continue;
+            const sx = xSrc + ((x * scaleX) + 0.5) | 0;
+            if (sx < 0) continue;
             if (sx >= clipWSrc) break;
             const dx = xDst + x;
 
@@ -136,8 +138,8 @@ namespace helper {
             fximgGetRows(dst, dx, dstRow, safeDstH);
 
             for (let y = 0; y < clipHDst; y++) {
-                const sy = ySrc + ((y * scaleY) + 0.5)|0;
-                if (sy < 0)      continue;
+                const sy = ySrc + ((y * scaleY) + 0.5) | 0;
+                if (sy < 0) continue;
                 if (sy >= clipHSrc) break;
                 const dy = yDst + y;
                 const newPixel = srcRow[sy];  // pixel จาก src (หลัง shift ySrc แล้ว)
@@ -165,27 +167,29 @@ namespace helper {
         color &= 0xF;
         if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color, idx); return; }
         idx = idx || 0;
-        if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic,))) return;
+        if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
         const w = fximgWidthOf(fxpic);
         const h = fximgHeightOf(fxpic);
+        x0 |= 0, y0 |= 0;
+        x1 |= 0, y1 |= 0;
         const iw = idx * w;
         if ((x0 < 0 && x1 < 0) || (x0 >= w && x1 >= w) ||
             (y0 < 0 && y1 < 0) || (y0 >= h && y1 >= h)) return;
 
         let steep = Math.abs(y1 - y0) > Math.abs(x1 - x0), tmp = 0;
-  
+
         if (steep) //[x0, y0, x1, y1] = [y0, x0, y1, x1];
             tmp = x0, x0 = y0, y0 = tmp,
-            tmp = x1, x1 = y1, y1 = tmp;
-  
+                tmp = x1, x1 = y1, y1 = tmp;
+
         if (x0 > x1) //[x0, x1, y0, y1] = [x1, x0, y1, y0];
             tmp = x0, x0 = x1, x1 = tmp,
-            tmp = y0, y0 = y1, y1 = tmp;
+                tmp = y0, y0 = y1, y1 = tmp;
 
         const dx = Math.abs(x1 - x0);
         const dy = Math.abs(y1 - y0);
         let err = dx >> 1;   // หรือใช้ bit shift >>1 ถ้าต้องการ integer แท้ ๆ
-  
+
         const ystep = y0 < y1 ? 1 : -1;
         let y = y0;
 
@@ -193,16 +197,16 @@ namespace helper {
             err -= dy;
             if (err < 0)
                 y += ystep,
-                err += dx;
+                    err += dx;
         }
 
         for (let x = x0; x <= x1; x++, nextErr()) {
             if (steep) {
-                if (y <  0 || x <  0) continue;
+                if (y < 0 || x < 0) continue;
                 if (y >= w || x >= h) break;
                 fximgSetPixel(fxpic, y, x, color);
             } else {
-                if (x <  0 || y <  0) continue;
+                if (x < 0 || y < 0) continue;
                 if (x >= w || y >= h) break;
                 fximgSetPixel(fxpic, x, y, color);
             }
@@ -282,12 +286,20 @@ namespace helper {
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
         color &= 0xF;
+        const w = fximgWidthOf(fxpic);
         const h = fximgHeightOf(fxpic);
-        for (let dy = -r; dy <= r; dy++) {
-            let y = cy + dy;
-            if (y < 0 || y >= h) continue;
-            let dx = psqrt(r * r - dy * dy) | 0;
-            fximgDrawLine(fxpic, cx - dx, y, cx + dx, y, color, idx);
+        const buf = pins.createBuffer(h);
+        for (let dx = -r; dx <= r; dx++) {
+            let x = cx + dx;
+            if (x < 0) continue;
+            if (x >= w) break;
+            fximg.getRows(fxpic, x, buf, h);
+            let dy = psqrt(r * r - dx * dx) | 0;
+            const offset = cy - dy;
+            const tmpBuf = pins.createBuffer((dy << 1) + Math.min(offset, 0));
+            tmpBuf.fill(color);
+            buf.write(Math.max(offset, 0), tmpBuf);
+            fximg.setRows(fxpic, x, buf, h);
         }
     }
 
@@ -346,18 +358,27 @@ namespace helper {
     export function fximgFillOval(fxpic: Buffer, cx: number, cy: number, rx: number, ry: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         if (rx < 1 || ry < 1) return;
-        if (rx === ry) { fximgDrawCircle(fxpic, cx, cy, rx, color, idx); return; }
+        if (rx === ry) { fximgFillCircle(fxpic, cx, cy, rx, color, idx); return; }
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
 
         color &= 0xF;
         const h = fximgHeightOf(fxpic);
+        const w = fximgWidthOf(fxpic);
+        const buf = pins.createBuffer(h);
+        const rx2 = rx * rx;
         const ry2 = ry * ry;
-        for (let dy = -ry; dy <= ry; dy++) {
-            let y = cy + dy;
-            if (y < 0 || y >= h) continue;
-            let dx = psqrt(rx * rx * (1 - (dy * dy / ry2))) | 0;
-            fximgDrawLine(fxpic, cx - dx, y, cx + dx, y, color, idx);
+        for (let dx = -rx; dx <= rx; dx++) {
+            let x = cx + dx;
+            if (x < 0) continue;
+            if (x >= w) break;
+            fximg.getRows(fxpic, x, buf, h);
+            let dy = (psqrt(ry2 * (1 - ((dx * dx) * finv(rx2)))) + 0.5) | 0;
+            const offset = cy - dy
+            const tmpBuf = pins.createBuffer((dy << 1) + Math.min(offset, 0));
+            tmpBuf.fill(color);
+            buf.write(Math.max(offset, 0), tmpBuf);
+            fximg.setRows(fxpic, x, buf, h);
         }
     }
 
@@ -450,8 +471,8 @@ namespace helper {
         let c = Math.abs(fcos(angle));   // |cos| * 120
 
         // newW ≈ (|cos| * w + |sin| * h) / 120 + 1 (เผื่อ margin)
-        let newW = 1 + (c * width + s * height)|0;
-        let newH = 1 + (s * width + c * height)|0;
+        let newW = 1 + (c * width + s * height) | 0;
+        let newH = 1 + (s * width + c * height) | 0;
 
         // เพิ่ม margin เล็กน้อยเพื่อป้องกัน clipping จาก rounding
         newW += 2;
@@ -486,8 +507,8 @@ namespace helper {
         for (let dy = -dstCy; dy < nh - dstCy; dy++) {
             for (let dx = -dstCx; dx < nw - dstCx; dx++) {
                 // dx, dy คือ offset จาก center ใหม่
-                let ox = (dx * c - dy * s)|0;
-                let oy = (dx * s + dy * c)|0;
+                let ox = (dx * c - dy * s) | 0;
+                let oy = (dx * s + dy * c) | 0;
 
                 let sx = ox + srcCx;
                 let sy = oy + srcCy;
@@ -503,10 +524,12 @@ namespace helper {
         return dst;
     }
 
+    const DEG_TO_RAD = Math.PI * finv(180);
+
     // 17. rotationFrame (สร้างหลายเฟรมหมุนเท่า ๆ กัน)
     export function fximgRotationFrame(fxpic: Buffer, count: number): Buffer {
         if (count < 1) count = 1;
-        const step = Math.idiv(256, count);
+        const step = Math.idiv(360, count) * DEG_TO_RAD;
         let w = fximgWidthOf(fxpic)
         let h = fximgHeightOf(fxpic);
         const [bw, bh] = fximgRotatedBounds(w, h, 32);
@@ -526,7 +549,7 @@ namespace helper {
     // Optional: trim ขอบโปร่งใส (สี 0) ออกให้เหลือเฉพาะส่วนที่มีเนื้อหา
     export function fximgTrim(fxpic: Buffer, trimMode?: FximgTrimType): Buffer {
         switch (trimMode) {
-            case 0x0: break; 
+            case 0x0: break;
             case 0x1: break;
             case 0x2: break;
             default: trimMode = 0x0; break;
@@ -548,7 +571,7 @@ namespace helper {
                         break;
                     }
                 }
-            if (minX < w) break;  // พบแล้ว หยุด scan ต่อ
+                if (minX < w) break;  // พบแล้ว หยุด scan ต่อ
             }
         } else minX = 0;
 
@@ -648,7 +671,7 @@ namespace helper {
         idx *= w;
 
         // ------------------- Sort vertices by x (left → right) -------------------
-        
+
         let tmpPt2: pt2 = null;
         if (v[0].x > v[1].x) tmpPt2 = v[0], v[0] = v[1], v[1] = tmpPt2;// [v1, v2] = [v2, v1];
         if (v[0].x > v[2].x) tmpPt2 = v[0], v[0] = v[2], v[2] = tmpPt2;// [v1, v3] = [v3, v1];
@@ -658,6 +681,10 @@ namespace helper {
         v1.x |= 0, v1.y |= 0;
         v2.x |= 0, v2.y |= 0;
         v3.x |= 0, v3.x |= 0;
+
+        v1.x--;
+        v2.x--;
+        v3.x--;
 
         // ถ้าจุดซ้าย-ขวาเดียวกัน → degenerate → ข้าม
         if (v1.x === v3.x) return;
@@ -674,12 +701,12 @@ namespace helper {
         const edgeInterp = (x: number, xa: number, ya: number, xb: number, yb: number): number => {
             if (xa === xb) return ya;
             const dy = yb - ya;
-            const invDx = finv((xb - xa));
+            const dx = xb - xa;
             // integer DDA: คำนวณ x ที่ y นี้
-            return ya + (((x - xa) * dy) * invDx);  // หรือใช้ fixed-point ถ้าต้องการแม่นกว่า
+            return ya + Math.idiv((x - xa) * dy, dx);  // หรือใช้ fixed-point ถ้าต้องการแม่นกว่า
         }
 
-        for (let x = xMin; x <= xMax; ++x) {
+        const drawX = (x: number) => {
             fximgGetRows(fxpic, x, fxpicRow, h);
             // หา x-left และ x-right ของ scanline นี้ โดย interp จาก edges
 
@@ -693,21 +720,26 @@ namespace helper {
             let y23 = x <= v2.x ? y12 : edgeInterp(x, v2.x, v2.y, v3.x, v3.y);
 
             // หา min/max y สำหรับ scanline นี้
-            let yTop    = Math.min(Math.min(y12, y13), y23);
+            let yTop = Math.min(Math.min(y12, y13), y23);
             let yBottom = Math.max(Math.max(y12, y13), y23);
 
-            yTop    = Math.max(0, (yTop + 0.5)|0);
-            yBottom = Math.min(h - 1, yBottom|0);
+            if (yTop >= h || yBottom < 0) return;
 
-            if ((yTop + PI0_2) > yBottom) continue;
+            yTop = Math.max(0, yTop);
+            yBottom = Math.min(h - 1, yBottom);
 
-            let rowChange = false;
+            if (yTop > yBottom) return;
 
-            // เติมแนวนอน (horizontal span)
-            for (let y = yTop; y <= yBottom; ++y) if (fxpicRow[y] !== color) fxpicRow[y] = color, rowChange = true;
-            if (!rowChange) continue;
+            const tmpRow = pins.createBuffer(yBottom - yTop);
+            tmpRow.fill(color);
+
+            fxpicRow.write(yTop, tmpRow);
+
             fximgSetRows(fxpic, x, fxpicRow, yBottom)
         }
+
+        for (let x = xMin; x <= xMax; x += 2) drawX(x);
+        for (let x = xMin + 1; x <= xMax; x += 2) drawX(x);
     }
 
     export function fximgDrawPolygon4(
@@ -732,11 +764,8 @@ namespace helper {
         x3: number, y3: number,
         color: number, idx?: number
     ) {
-        //const w = fximgWidthOf(fxpic), h = fximgHeightOf(fxpic);
-        //if (fximgIsOutOfAreas([new pt2(x1, y1), new pt2(x0, y0), new pt2(x3, y3)], w, h)) 
-            fximgFillTriangle(fxpic, x1, y1, x0, y0, x3, y3, color, idx);
-        //if (fximgIsOutOfAreas([new pt2(x2, y2), new pt2(x0, y0), new pt2(x3, y3)], w, h)) 
-            fximgFillTriangle(fxpic, x2, y2, x0, x0, y3, y3, color, idx);
+        fximgFillTriangle(fxpic, x0, y0, x1, y1, x3, y3, color);
+        fximgFillTriangle(fxpic, x2, y2, x1, y1, x3, y3, color);
     }
 
     export function fximgDrawDistortedImage(
@@ -782,90 +811,93 @@ namespace helper {
 
     class pt2_2 { constructor(public x0: number, public y0: number, public x1: number, public y1: number) { }; };
 
-    class pt2_4 { constructor(
-        public x0: number, public y0: number, public x1: number, public y1: number,
-        public x2: number, public y2: number, public x3: number, public y3: number,
-    ) { }; get toArr() { return [
-        new pt2(this.x0, this.y0), new pt2(this.x1, this.y1),
-        new pt2(this.x2, this.y2), new pt2(this.x3, this.y3),
-    ]}; };
+    class pt2_4 {
+        constructor(
+            public x0: number, public y0: number, public x1: number, public y1: number,
+            public x2: number, public y2: number, public x3: number, public y3: number,
+        ) { }; get toArr() {
+            return [
+                new pt2(this.x0, this.y0), new pt2(this.x1, this.y1),
+                new pt2(this.x2, this.y2), new pt2(this.x3, this.y3),
+            ]
+        };
+    };
 
     function fximgBuiltDrawDistortedImage(
         src: Buffer, dst: Buffer,
         x0: number, y0: number,  // top-left
         x1: number, y1: number,  // top-right
         x2: number, y2: number,  // bottom-right
-        x3: number, y3: number,  // bottom-left
-        transparent: boolean,
+        x3?: number, y3?: number,  // bottom-left
+        transparent?: boolean,
     ) {
         if (fximgRoCheck(dst)) return;
+        if (x3 == null) x3 = x2 + (x1 - x0);
+        if (y3 == null) y3 = y2 + (y1 - y0);
         const srcW = fximgWidthOf(src);
         const srcH = fximgHeightOf(src);
         const dstTotalW = fximgWidthOf(dst) * fximgLengthOf(dst);
         const dstH = fximgHeightOf(dst);
 
         const srcRow = pins.createBuffer(srcH);
-        const emptySrcRowHash = srcRow.hash(0xffff) & 0xffff
+        const emptyHash = srcRow.hash(0xffff) & 0xffff
 
         // Precompute inverse เพื่อความเร็ว
-        const srcInvW = finv(srcW);
-        const srcInvH = finv(srcH);
+        const wInv = 1/(srcW);
+        const hInv = 1/(srcH);
 
+        //if (!p3) p3 = new Pt(p2.x + (p1.x - p0.x), p2.y + (p1.y - p0.y));
+        //const w = from.width, h = from.height;
+        //const wInv = 1 / w, hInv = 1 / h;
+        //const fromRowBuf = pins.createBuffer(h);
+        //const emptyHash = fromRowBuf.hash(0xffff)
         const pqu = new pt2_2(
-            (x1 - x0), (y1 - y0),
-            (x2 - x3), (y2 - y3),
+            (x1 - x0),
+            (y1 - y0),
+            (x2 - x3),
+            (y2 - y3),
         )
-
-        for (let sx = srcW - 1; sx > -1; sx--) {
+        for (let sx = 0; sx < srcW; sx++) {
             fximgGetRows(src, sx, srcRow, srcH);
-            if ((srcRow.hash(0xffff) & 0xffff) === emptySrcRowHash) continue;
+            if (srcRow.hash(0xffff) === emptyHash) continue;
+            const u0 = (sx * wInv), u1 = ((sx + 1) * wInv);
 
-            // u สำหรับ column นี้ (left edge) และ column ถัดไป (right edge)
-            const u0 = sx * srcInvW, u1 = (sx + 1) * srcInvW;
-
-            // คำนวณตำแหน่ง 4 มุมของ quad เล็ก ๆ ใน dst สำหรับ texel นี้
             const qu = new pt2_4(
-                x0 + pqu.x0 * u0, y0 + pqu.y0 * u0,
-                x3 + pqu.x1 * u1, y3 + pqu.y1 * u0,
-                x0 + pqu.x0 * u0, y0 + pqu.y0 * u1,
-                x3 + pqu.x1 * u1, y3 + pqu.y1 * u1,
-            );
-
-            const pqv = new pt2_2(
-                (qu.x1 - qu.x0), (qu.y1 - qu.y0),
-                (qu.x3 - qu.x2), (qu.y3 - qu.y2),
+                x0 + pqu.x0 * u0,
+                y0 + pqu.y0 * u0,
+                x3 + pqu.x1 * u0,
+                y3 + pqu.y1 * u0,
+                x0 + pqu.x0 * u1,
+                y0 + pqu.y0 * u1,
+                x3 + pqu.x1 * u1,
+                y3 + pqu.y1 * u1,
             )
 
-            for (let sy = srcH - 1; sy > -1; sy--, srcRow.shift(1)) {
-                if ((srcRow.hash(0xffff) & 0xffff) === emptySrcRowHash) continue;
-                const color = srcRow[0];
-                if (transparent && color < 1) continue;
-
-                // v สำหรับ row นี้ และ row ถัดไป
-                const v0 = sy * srcInvH, v1 = (sy + 1) * srcInvH;
-
-                // คำนวณ 4 จุดสุดท้ายของ quad ใน dst
+            const pqv = new pt2_2(
+                (qu.x1 - qu.x0),
+                (qu.y1 - qu.y0),
+                (qu.x3 - qu.x2),
+                (qu.y3 - qu.y2),
+            )
+            for (let sy = 0; sy < srcH; sy++) {
+                const color = srcRow[sy]
+                if (color < 1) continue;// transparent
+                const v0 = (sy * hInv), v1 = ((sy + 1) * hInv);
                 const qv = new pt2_4(
-                    // top-left
-                    Math.round(qu.x0 + pqv.x0 * v0),
-                    Math.round(qu.y0 + pqv.y0 * v0),
-                    // top-right
-                    Math.round(qu.x2 + pqv.x1 * v0),
-                    Math.round(qu.y2 + pqv.y1 * v0),
-                    // bottom-right
-                    Math.round(qu.x0 + pqv.x0 * v1),
-                    Math.round(qu.y0 + pqv.y0 * v1),
-                    // bottom-left
-                    Math.round(qu.x2 + pqv.x1 * v1),
-                    Math.round(qu.y2 + pqv.y1 * v1),
-                );
-
-                // ถ้าทั้ง 4 จุดอยู่นอก → ข้าม
-                if (fximgIsOutOfAreas(qv.toArr, dstTotalW, dstH)) continue;
-
-                // วาด quad เล็ก ๆ ด้วย 2 triangle (หรือใช้ fillQuad ถ้ามี)
-                fximgFillTriangle(dst, qv.x0, qv.y0, qv.x1, qv.y1, qv.x3, qv.y3, color);
-                fximgFillTriangle(dst, qv.x2, qv.y2, qv.x1, qv.y1, qv.x3, qv.y3, color);
+                    (qu.x0 + pqv.x0 * v0) | 0,
+                    (qu.y0 + pqv.y0 * v0) | 0,
+                    (qu.x2 + pqv.x1 * v0) | 0,
+                    (qu.y2 + pqv.y1 * v0) | 0,
+                    (qu.x0 + pqv.x0 * v1) | 0,
+                    (qu.y0 + pqv.y0 * v1) | 0,
+                    (qu.x2 + pqv.x1 * v1) | 0,
+                    (qu.y2 + pqv.y1 * v1) | 0,
+                )
+                if (fximgIsOutOfAreas(qv.toArr, dstTotalW, dstH)) continue; // skipped if out of screen
+                // stamp 2 triangles by pixel
+                fximgFillTriangle(dst, qv.x1, qv.y1, qv.x0, qv.y0, qv.x3, qv.y3, color);
+                fximgFillTriangle(dst, qv.x2, qv.y2, qv.x0, qv.y0, qv.x3, qv.y3, color);
+                //helpers.imageFillPolygon4(to, qd[3].x, qd[3].y, qd[2].x, qd[2].y, qd[0].x, qd[0].y, qd[1].x, qd[1].y, colorIdx);
             }
         }
     }
