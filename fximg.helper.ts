@@ -6,7 +6,7 @@ enum FximgDataIdx {
     start = 0x3,
 };
 
-namespace helper {
+namespace helpers {
 
     export const PI0_1     = Math.PI * 0.1;
     export const PI0_2     = Math.PI * 0.2;

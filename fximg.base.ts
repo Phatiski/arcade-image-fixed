@@ -1,5 +1,5 @@
 
-namespace helper {
+namespace helpers {
 
     export function fximgRoCheck(fxpic: Buffer) {
         if (fximgIsReadonly(fxpic)) { throw "this fixed image is read-only"; return true; };

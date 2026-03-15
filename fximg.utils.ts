@@ -8,7 +8,7 @@ enum FximgTrimType {
     yOnly = 0x2,
 }
 
-namespace helper {
+namespace helpers {
 
     /* // Helper: clip ค่าให้อยู่ในช่วง
     function clip(v: number, minv: number, maxv: number): number {
