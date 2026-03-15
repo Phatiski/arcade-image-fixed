@@ -169,12 +169,13 @@ namespace helpers {
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
         const w = fximgWidthOf(fxpic);
         const h = fximgHeightOf(fxpic);
-        if (fximgIsOutOfArea(x0, y0, w, h) && fximgIsOutOfArea(x1, y1, w, h)) return;
+        //if (fximgIsOutOfArea(x0, y0, w, h) && fximgIsOutOfArea(x1, y1, w, h)) return;
         x0 |= 0, y0 |= 0;
         x1 |= 0, y1 |= 0;
-        if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color, idx); return; }
+        //if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color, idx); return; }
         if ((x0 < 0 && x1 < 0) || (x0 >= h && x1 >= h) ||
             (y0 < 0 && y1 < 0) || (y0 >= w && y1 >= w)) return;
+        if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color); return; }
 
         const dx = Math.abs(x1 - x0);
         const sx = x0 < x1 ? 1 : -1;
@@ -203,7 +204,7 @@ namespace helpers {
     }
 
     function interpolate(x0: number, y0: number, x1: number, y1: number, w: number, h: number) {
-        if (fximgIsOutOfArea(x0, y0, w, h) && fximgIsOutOfArea(x1, y1, w, h)) return [];
+        //if (fximgIsOutOfArea(x0, y0, w, h) && fximgIsOutOfArea(x1, y1, w, h)) return [];
         x0 |= 0, y0 |= 0;
         x1 |= 0, y1 |= 0;
         if ((x0 < 0 && x1 < 0) || (x0 >= h && x1 >= w) ||
@@ -215,6 +216,11 @@ namespace helpers {
         const sy = y0 < y1 ? 1 : -1;
         let err = dx - dy;
         let vals: number[] = [];
+
+        const isOutOfRangeFacing = (d: number, n: number, m: number, r: boolean) => (
+            r ? ((d < 0 && n < 0) || (d > 0 && n >= m))
+            :   ((d > 0 && n < 0) || (d < 0 && n >= m))
+        )
         while (1) {
             const e2 = err << 1;
             if (e2 >= -dy) {
@@ -222,15 +228,15 @@ namespace helpers {
                 if (x0 == x1) break;
                 err -= dy;
                 x0 = x0 + sx;
-                if ((sx > 0 && x0 < 0) || (sx < 0 && x0 >= w)) continue;
-                if ((sx < 0 && x0 < 0) || (sx > 0 && x0 >= w)) break;
+                if (isOutOfRangeFacing(sx, x0, w, false)) { vals.pop(); continue; }
+                if (isOutOfRangeFacing(sx, x0, w, true)) { vals.pop(); break; }
             }
             if (e2 <= dx) {
                 if (y0 == y1) break;
                 err += dx;
                 y0 = y0 + sy;
-                if ((sy > 0 && y0 < 0) || (sy < 0 && y0 >= h)) continue;
-                if ((sy < 0 && y0 < 0) || (sy > 0 && y0 >= h)) break;
+                if (isOutOfRangeFacing(sy, y0, h, false)) { continue; }
+                if (isOutOfRangeFacing(sy, y0 )) { break; }
             }
         }
         return vals;
@@ -740,7 +746,9 @@ namespace helpers {
             fximgGetRows(fxpic, x, buf, h);
             const yt = yts[x - x0];
             const yb = ybs[x - x0];
-            const tmpBuf = pins.createBuffer(Math.abs(yb - yt) + Math.min(yt, 0));
+            const tmpBufSize = Math.abs(yb - yt) + Math.min(yt, 0);
+            if (tmpBufSize < 0) continue;
+            const tmpBuf = pins.createBuffer(tmpBufSize);
             tmpBuf.fill(color);
             buf.write(Math.max(yt, 0), tmpBuf);
             fximgSetRows(fxpic, x, buf, h);

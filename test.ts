@@ -40,7 +40,7 @@ basic.forever(() => {
         //    randint(0, w - 1), randint(0, h - 1),
         //)
         fximg.fillTriangle(imgfxb,
-            randint(0, w - 1), randint(0, h - 1),
+            randint(-20, 20), randint(-1, h - 1),
             randint(0, w - 1), randint(0, h - 1),
             randint(0, w - 1), randint(0, h - 1),
             randint(0x0, 0xf),
