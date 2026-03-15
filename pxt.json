@@ -1,6 +1,6 @@
 {
     "name": "fixed image",
-    "version": "1.2.0",
+    "version": "1.1.2",
     "description": "fixed picture manager like image editor in lite version (inspired by: fixed grid trick in scratch-lang)",
     "dependencies": {
         "device": "*"
@@ -19,7 +19,7 @@
         "test.ts"
     ],
     "targetVersions": {
-        "target": "4.0.12",
+        "target": "4.0.10",
         "targetId": "arcade"
     },
     "supportedTargets": [

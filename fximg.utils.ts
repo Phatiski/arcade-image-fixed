@@ -503,12 +503,10 @@ namespace helper {
         return dst;
     }
 
-    const DEG_TO_RAD = Math.PI * finv(180);
-
     // 17. rotationFrame (สร้างหลายเฟรมหมุนเท่า ๆ กัน)
     export function fximgRotationFrame(fxpic: Buffer, count: number): Buffer {
         if (count < 1) count = 1;
-        const step = Math.idiv(360, count) * DEG_TO_RAD;
+        const step = Math.idiv(256, count);
         let w = fximgWidthOf(fxpic)
         let h = fximgHeightOf(fxpic);
         const [bw, bh] = fximgRotatedBounds(w, h, 32);
@@ -676,12 +674,12 @@ namespace helper {
         const edgeInterp = (x: number, xa: number, ya: number, xb: number, yb: number): number => {
             if (xa === xb) return ya;
             const dy = yb - ya;
-            const dx = xb - xa;
+            const invDx = finv((xb - xa));
             // integer DDA: คำนวณ x ที่ y นี้
-            return ya + Math.idiv((x - xa) * dy, dx);  // หรือใช้ fixed-point ถ้าต้องการแม่นกว่า
+            return ya + (((x - xa) * dy) * invDx);  // หรือใช้ fixed-point ถ้าต้องการแม่นกว่า
         }
 
-        for (let x = xMin + 1; x <= xMax; x++) {
+        for (let x = xMin; x <= xMax; ++x) {
             fximgGetRows(fxpic, x, fxpicRow, h);
             // หา x-left และ x-right ของ scanline นี้ โดย interp จาก edges
 
@@ -698,15 +696,15 @@ namespace helper {
             let yTop    = Math.min(Math.min(y12, y13), y23);
             let yBottom = Math.max(Math.max(y12, y13), y23);
 
-            yTop    = Math.max(0, yTop);
-            yBottom = Math.min(h - 1, yBottom);
+            yTop    = Math.max(0, (yTop + 0.5)|0);
+            yBottom = Math.min(h - 1, yBottom|0);
 
-            if (yTop > yBottom) continue;
+            if ((yTop + PI0_2) > yBottom) continue;
 
             let rowChange = false;
 
             // เติมแนวนอน (horizontal span)
-            for (let y = yTop + 1; y <= yBottom; y++) if (fxpicRow[y] !== color) fxpicRow[y] = color, rowChange = true;
+            for (let y = yTop; y <= yBottom; ++y) if (fxpicRow[y] !== color) fxpicRow[y] = color, rowChange = true;
             if (!rowChange) continue;
             fximgSetRows(fxpic, x, fxpicRow, yBottom)
         }
@@ -807,7 +805,7 @@ namespace helper {
         const dstH = fximgHeightOf(dst);
 
         const srcRow = pins.createBuffer(srcH);
-        //const emptySrcRowHash = srcRow.hash(0xffff) & 0xffff
+        const emptySrcRowHash = srcRow.hash(0xffff) & 0xffff
 
         // Precompute inverse เพื่อความเร็ว
         const srcInvW = finv(srcW);
@@ -818,9 +816,9 @@ namespace helper {
             (x2 - x3), (y2 - y3),
         )
 
-        for (let sx = 0; sx < srcW; sx++) {
+        for (let sx = srcW - 1; sx > -1; sx--) {
             fximgGetRows(src, sx, srcRow, srcH);
-            //if ((srcRow.hash(0xffff) & 0xffff) === emptySrcRowHash) continue;
+            if ((srcRow.hash(0xffff) & 0xffff) === emptySrcRowHash) continue;
 
             // u สำหรับ column นี้ (left edge) และ column ถัดไป (right edge)
             const u0 = sx * srcInvW, u1 = (sx + 1) * srcInvW;
@@ -838,9 +836,9 @@ namespace helper {
                 (qu.x3 - qu.x2), (qu.y3 - qu.y2),
             )
 
-            for (let sy = 0; sy < srcH; sy++) {
-                //if ((srcRow.hash(0xffff) & 0xffff) === emptySrcRowHash) continue;
-                const color = srcRow[sy];
+            for (let sy = srcH - 1; sy > -1; sy--, srcRow.shift(1)) {
+                if ((srcRow.hash(0xffff) & 0xffff) === emptySrcRowHash) continue;
+                const color = srcRow[0];
                 if (transparent && color < 1) continue;
 
                 // v สำหรับ row นี้ และ row ถัดไป
@@ -849,17 +847,17 @@ namespace helper {
                 // คำนวณ 4 จุดสุดท้ายของ quad ใน dst
                 const qv = new pt2_4(
                     // top-left
-                    (qu.x0 + pqv.x0 * v0)|0,
-                    (qu.y0 + pqv.y0 * v0)|0,
+                    Math.round(qu.x0 + pqv.x0 * v0),
+                    Math.round(qu.y0 + pqv.y0 * v0),
                     // top-right
-                    (qu.x2 + pqv.x1 * v0)|0,
-                    (qu.y2 + pqv.y1 * v0)|0,
+                    Math.round(qu.x2 + pqv.x1 * v0),
+                    Math.round(qu.y2 + pqv.y1 * v0),
                     // bottom-right
-                    (qu.x0 + pqv.x0 * v1)|0,
-                    (qu.y0 + pqv.y0 * v1)|0,
+                    Math.round(qu.x0 + pqv.x0 * v1),
+                    Math.round(qu.y0 + pqv.y0 * v1),
                     // bottom-left
-                    (qu.x2 + pqv.x1 * v1)|0,
-                    (qu.y2 + pqv.y1 * v1)|0,
+                    Math.round(qu.x2 + pqv.x1 * v1),
+                    Math.round(qu.y2 + pqv.y1 * v1),
                 );
 
                 // ถ้าทั้ง 4 จุดอยู่นอก → ข้าม
