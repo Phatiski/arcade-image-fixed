@@ -153,6 +153,10 @@ namespace helpers {
     };
 
     export function fximgIsOutOfRange(n: number, r: number) { return (n < 0 || n >= r); };
+    export function isOutOfRangeFacing(d: number, n: number, m: number, r: boolean) { return (
+        r ? ((d <= 0 && n < 0) || (d >= 0 && n >= m))
+        :   ((d >= 0 && n < 0) || (d <= 0 && n >= m))
+    )}
     export function fximgIsOutOfArea(x: number, y: number, w: number, h: number) { return (fximgIsOutOfRange(x, w) || fximgIsOutOfRange(y, h)); };
     export function fximgIsOutOfAreas(pos: pt2[], w: number, h: number) { return pos.every(v => (fximgIsOutOfArea(v.x, v.y, w, h))); };
 
