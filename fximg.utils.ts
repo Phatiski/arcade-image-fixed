@@ -182,7 +182,6 @@ namespace helpers {
         const dy = Math.abs(y1 - y0);
         const sy = y0 < y1 ? 1 : -1;
         let err = dx - dy;
-        let vals: number[] = [];
         while (1) {
             fximgSetPixel(fxpic, x0, y0, color, idx);
             const e2 = err << 1;
@@ -190,15 +189,15 @@ namespace helpers {
                 if (x0 == x1) break;
                 err -= dy;
                 x0 = x0 + sx;
-                if ((sx > 0 && x0 < 0) || (sx < 0 && x0 >= w)) continue;
-                if ((sx < 0 && x0 < 0) || (sx > 0 && x0 >= w)) break;
+                if (fximgIsOutOfRangeFacing(sx, x0, w, false)) continue;
+                if (fximgIsOutOfRangeFacing(sx, x0, w, true))  break;
             }
             if (e2 <= dx) {
                 if (y0 == y1) break;
                 err += dx;
                 y0 = y0 + sy;
-                if ((sy > 0 && y0 < 0) || (sy < 0 && y0 >= h)) continue;
-                if ((sy < 0 && y0 < 0) || (sy > 0 && y0 >= h)) break;
+                if (fximgIsOutOfRangeFacing(sy, y0, h, false)) continue;
+                if (fximgIsOutOfRangeFacing(sy, y0, h, true))  break;
             }
         }
     }
@@ -217,26 +216,23 @@ namespace helpers {
         let err = dx - dy;
         let vals: number[] = [];
 
-        const isOutOfRangeFacing = (d: number, n: number, m: number, r: boolean) => (
-            r ? ((d < 0 && n < 0) || (d > 0 && n >= m))
-            :   ((d > 0 && n < 0) || (d < 0 && n >= m))
-        )
         while (1) {
             const e2 = err << 1;
             if (e2 >= -dy) {
-                vals.push(y0);
+                if (!fximgIsOutOfRangeFacing(sx, x0, w, false) ||
+                    !fximgIsOutOfRangeFacing(sx, x0, w, true)) vals.push(y0);
                 if (x0 == x1) break;
                 err -= dy;
                 x0 = x0 + sx;
-                if (isOutOfRangeFacing(sx, x0, w, false)) { vals.pop(); continue; }
-                if (isOutOfRangeFacing(sx, x0, w, true)) { vals.pop(); break; }
+                if (fximgIsOutOfRangeFacing(sx, x0, w, false)) continue;
+                if (fximgIsOutOfRangeFacing(sx, x0, w, true))  break;
             }
             if (e2 <= dx) {
                 if (y0 == y1) break;
                 err += dx;
                 y0 = y0 + sy;
-                if (isOutOfRangeFacing(sy, y0, h, false)) { continue; }
-                if (isOutOfRangeFacing(sy, y0 )) { break; }
+                if (fximgIsOutOfRangeFacing(sy, y0, h, false)) continue;
+                if (fximgIsOutOfRangeFacing(sy, y0, h, true))  break;
             }
         }
         return vals;
@@ -782,14 +778,14 @@ namespace helpers {
     }
 
     export function fximgDrawDistortedImage(
-        from: Buffer, fxpic: Buffer,
-        x0: number, y0: number,
-        x1: number, y1: number,
-        x2: number, y2: number,
-        x3: number, y3: number,
+        from: Buffer, to: Buffer,
+        x0:   number, y0: number,
+        x1:   number, y1: number,
+        x2:   number, y2: number,
+        x3?:  number, y3?:number,
     ) {
         fximgBuiltDrawDistortedImage(
-            from, fxpic,
+            from, to,
             x0, y0, x1, y1,
             x2, y2, x3, y3,
             false
@@ -797,14 +793,14 @@ namespace helpers {
     }
 
     export function fximgDrawTransDistortedImage(
-        from: Buffer, fxpic: Buffer,
-        x0: number, y0: number,
-        x1: number, y1: number,
-        x2: number, y2: number,
-        x3: number, y3: number,
+        from: Buffer, to: Buffer,
+        x0:   number, y0: number,
+        x1:   number, y1: number,
+        x2:   number, y2: number,
+        x3?:  number, y3?:number,
     ) {
         fximgBuiltDrawDistortedImage(
-            from, fxpic,
+            from, to,
             x0, y0, x1, y1,
             x2, y2, x3, y3,
             true
@@ -838,10 +834,10 @@ namespace helpers {
 
     function fximgBuiltDrawDistortedImage(
         from: Buffer, to: Buffer,
-        x0:  number, y0:  number,//p0: { x: number, y: number },   // top-left
-        x1:  number, y1:  number,//p1: { x: number, y: number },   // top-right
-        x2:  number, y2:  number,//p2: { x: number, y: number },   // bottom-right
-        x3?: number, y3?: number,//p3?: { x: number, y: number },  // bottom-left (optional)
+        x0:   number, y0: number,//p0:  { x: number, y: number },   // top-left
+        x1:   number, y1: number,//p1:  { x: number, y: number },   // top-right
+        x2:   number, y2: number,//p2:  { x: number, y: number },   // bottom-right
+        x3?:  number, y3?:number,//p3?: { x: number, y: number },  // bottom-left (optional)
         transparent?: boolean,
         center?: boolean
     ) {

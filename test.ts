@@ -31,16 +31,17 @@ if (1) {
 
 
 basic.forever(() => {
-    let j = randint(1, 4);
+    let j = randint(1, 8);
     for (let i = 0; i < j; i++) {
-        //fximg.drawDistortedImage(imgfxa, imgfxb,
+        //fximg.fillPolygon4(imgfxb,
         //    randint(0, w - 1), randint(0, h - 1),
         //    randint(0, w - 1), randint(0, h - 1),
         //    randint(0, w - 1), randint(0, h - 1),
         //    randint(0, w - 1), randint(0, h - 1),
+        //    randint(0x0, 0xf)
         //)
         fximg.fillTriangle(imgfxb,
-            randint(-20, 20), randint(-1, h - 1),
+            randint(0, w - 1), randint(0, h - 1),
             randint(0, w - 1), randint(0, h - 1),
             randint(0, w - 1), randint(0, h - 1),
             randint(0x0, 0xf),

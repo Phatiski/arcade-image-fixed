@@ -153,7 +153,7 @@ namespace helpers {
     };
 
     export function fximgIsOutOfRange(n: number, r: number) { return (n < 0 || n >= r); };
-    export function isOutOfRangeFacing(d: number, n: number, m: number, r: boolean) { return (
+    export function fximgIsOutOfRangeFacing(d: number, n: number, m: number, r: boolean) { return (
         r ? ((d <= 0 && n < 0) || (d >= 0 && n >= m))
         :   ((d >= 0 && n < 0) || (d <= 0 && n >= m))
     )}
