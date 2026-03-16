@@ -216,7 +216,7 @@ namespace helpers {
         let err = dx - dy;
         let vals: number[] = [];
 
-        while (1) {
+        for (let i = 0; ; i++) {
             const e2 = err << 1;
             if (e2 >= -dy) {
                 if (!fximgIsOutOfRangeFacing(sx, x0, w, false) ||
@@ -707,21 +707,16 @@ namespace helpers {
         if (x2 < x1) tmp = x2, x2 = x1, x1 = tmp, tmp = y2, y2 = y1, y1 = tmp;//[x2, y2, x1, y1] = [x1, y1, x2, y2];
 
         //Compute the x coordinates of the triangles edges
-        let y01 = interpolate(x0, y0, x1, y1, w, h);
-        let y12 = interpolate(x1, y1, x2, y2, w, h);
+        let y012 = interpolate(x0, y0, x1, y1, w, h).concat(interpolate(x1, y1, x2, y2, w, h));
         let y02 = interpolate(x0, y0, x2, y2, w, h);
 
-        if (y01.length < 1 || y12.length < 1 || y02.length < 1) return;
-
-        //Concatenate the short sides
-        let y012 = y01.concat(y12);
+        if (y012.length < 1 || y02.length < 1) return;
 
         //Ensure the arrays are the correct length
-        if (y012.length > y02.length) {
+        if (y012.length > y02.length)
             y012.pop();
-        } else if (y012.length < y02.length) {
+        else if (y012.length < y02.length)
             y02.pop();
-        }
 
         //Determine which is left and which is right
         let yts: number[] = [];
@@ -729,29 +724,34 @@ namespace helpers {
         //pick midpoint
         let m = y012.length >>> 1;
         //Check which x value is greater at that midpoint
-        if (y02[m] < y012[m]) {
-            yts = y02;
+        if (y02[m] < y012[m])
+            yts = y02,
             ybs = y012;
-        } else {
-            yts = y012;
+        else
+            yts = y012,
             ybs = y02;
-        }
 
         const buf = pins.createBuffer(h);
 
         //Draw em
         //TODO: just write to the buffer with fill; place any bitwise operations for dithering patterns thusly
-        for (let x = x0; x <= x2; x++) {
+        const drawX = (x: number) => {
             fximgGetRows(fxpic, x, buf, h);
-            const yt = yts[x - x0];
-            const yb = ybs[x - x0];
+            const yt = yts[x - x0]
+            const yb = ybs[x - x0]
             const tmpBufSize = Math.abs(yb - yt) + Math.min(yt, 0);
-            if (tmpBufSize < 0) continue;
+            if (tmpBufSize < 0) return;
             const tmpBuf = pins.createBuffer(tmpBufSize);
             tmpBuf.fill(color);
             buf.write(Math.max(yt, 0), tmpBuf);
             fximgSetRows(fxpic, x, buf, h);
         }
+
+        for (let x = x0; x <= x2; x += 2) {
+            drawX(x);
+            drawX(x + 1);
+        }
+
     }
 
     export function fximgDrawPolygon4(

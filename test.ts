@@ -32,7 +32,7 @@ if (1) {
 
 
 basic.forever(() => {
-    let j = randint(1, 8);
+    let j = 8//randint(1, 16);
     for (let i = 0; i < j; i++) {
         //fximg.fillPolygon4(imgfxb,
         //    randint(0, w - 1), randint(0, h - 1),
