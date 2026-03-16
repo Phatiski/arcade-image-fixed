@@ -165,77 +165,99 @@ namespace helpers {
     export function fximgDrawLine(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         color &= 0xF;
+        if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color, idx); return; }
         idx = idx || 0;
-        if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
+        if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic,))) return;
         const w = fximgWidthOf(fxpic);
         const h = fximgHeightOf(fxpic);
-        //if (fximgIsOutOfArea(x0, y0, w, h) && fximgIsOutOfArea(x1, y1, w, h)) return;
-        x0 |= 0, y0 |= 0;
-        x1 |= 0, y1 |= 0;
-        //if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color, idx); return; }
-        if ((x0 < 0 && x1 < 0) || (x0 >= h && x1 >= h) ||
-            (y0 < 0 && y1 < 0) || (y0 >= w && y1 >= w)) return;
-        if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color); return; }
+        const iw = idx * w;
+        if ((x0 < 0 && x1 < 0) || (x0 >= w && x1 >= w) ||
+            (y0 < 0 && y1 < 0) || (y0 >= h && y1 >= h)) return;
+
+        let steep = Math.abs(y1 - y0) > Math.abs(x1 - x0), tmp = 0;
+  
+        if (steep) //[x0, y0, x1, y1] = [y0, x0, y1, x1];
+            tmp = x0, x0 = y0, y0 = tmp,
+            tmp = x1, x1 = y1, y1 = tmp;
+  
+        if (x0 > x1) //[x0, x1, y0, y1] = [x1, x0, y1, y0];
+            tmp = x0, x0 = x1, x1 = tmp,
+            tmp = y0, y0 = y1, y1 = tmp;
 
         const dx = Math.abs(x1 - x0);
-        const sx = x0 < x1 ? 1 : -1;
         const dy = Math.abs(y1 - y0);
-        const sy = y0 < y1 ? 1 : -1;
-        let err = dx - dy;
-        while (1) {
-            fximgSetPixel(fxpic, x0, y0, color, idx);
-            const e2 = err << 1;
-            if (e2 >= -dy) {
-                if (x0 == x1) break;
-                err -= dy;
-                x0 = x0 + sx;
-                if (fximgIsOutOfRangeFacing(sx, x0, w, false)) continue;
-                if (fximgIsOutOfRangeFacing(sx, x0, w, true))  break;
-            }
-            if (e2 <= dx) {
-                if (y0 == y1) break;
+        let err = dx >> 1;   // หรือใช้ bit shift >>1 ถ้าต้องการ integer แท้ ๆ
+  
+        const ystep = y0 < y1 ? 1 : -1;
+        let y = y0;
+
+        const nextErr = () => {
+            err -= dy;
+            if (err < 0)
+                y += ystep,
                 err += dx;
-                y0 = y0 + sy;
-                if (fximgIsOutOfRangeFacing(sy, y0, h, false)) continue;
-                if (fximgIsOutOfRangeFacing(sy, y0, h, true))  break;
+        }
+
+        for (let x = x0; x <= x1; x++, nextErr()) {
+            if (steep) {
+                if (y <  0 || x <  0) continue;
+                if (y >= w || x >= h) break;
+                fximgSetPixel(fxpic, y, x, color);
+            } else {
+                if (x <  0 || y <  0) continue;
+                if (x >= w || y >= h) break;
+                fximgSetPixel(fxpic, x, y, color);
             }
         }
     }
 
     function interpolate(x0: number, y0: number, x1: number, y1: number, w: number, h: number) {
-        //if (fximgIsOutOfArea(x0, y0, w, h) && fximgIsOutOfArea(x1, y1, w, h)) return [];
-        x0 |= 0, y0 |= 0;
-        x1 |= 0, y1 |= 0;
-        if ((x0 < 0 && x1 < 0) || (x0 >= h && x1 >= w) ||
-            (y0 < 0 && y1 < 0) || (y0 >= w && y1 >= h)) return [];
+        if (fximgRoCheck(fxpic)) return;
+        color &= 0xF;
+        if (x0 === x1 && y0 === y1) { fximgSetPixel(fxpic, x0, y0, color, idx); return; }
+        idx = idx || 0;
+        if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic,))) return;
+        const w = fximgWidthOf(fxpic);
+        const h = fximgHeightOf(fxpic);
+        const iw = idx * w;
+        if ((x0 < 0 && x1 < 0) || (x0 >= w && x1 >= w) ||
+            (y0 < 0 && y1 < 0) || (y0 >= h && y1 >= h)) return;
+
+        let steep = Math.abs(y1 - y0) > Math.abs(x1 - x0), tmp = 0;
+  
+        if (steep) //[x0, y0, x1, y1] = [y0, x0, y1, x1];
+            tmp = x0, x0 = y0, y0 = tmp,
+            tmp = x1, x1 = y1, y1 = tmp;
+  
+        if (x0 > x1) //[x0, x1, y0, y1] = [x1, x0, y1, y0];
+            tmp = x0, x0 = x1, x1 = tmp,
+            tmp = y0, y0 = y1, y1 = tmp;
 
         const dx = Math.abs(x1 - x0);
-        const sx = x0 < x1 ? 1 : -1;
         const dy = Math.abs(y1 - y0);
-        const sy = y0 < y1 ? 1 : -1;
-        let err = dx - dy;
-        let vals: number[] = [];
+        let err = dx >> 1;   // หรือใช้ bit shift >>1 ถ้าต้องการ integer แท้ ๆ
+  
+        const ystep = y0 < y1 ? 1 : -1;
+        let y = y0;
 
-        while (1) {
-            const e2 = err << 1;
-            if (e2 >= -dy) {
-                if (!fximgIsOutOfRangeFacing(sx, x0, w, false) ||
-                    !fximgIsOutOfRangeFacing(sx, x0, w, true)) vals.push(y0);
-                if (x0 == x1) break;
-                err -= dy;
-                x0 = x0 + sx;
-                if (fximgIsOutOfRangeFacing(sx, x0, w, false)) continue;
-                if (fximgIsOutOfRangeFacing(sx, x0, w, true))  break;
-            }
-            if (e2 <= dx) {
-                if (y0 == y1) break;
+        const nextErr = () => {
+            err -= dy;
+            if (err < 0)
+                y += ystep,
                 err += dx;
-                y0 = y0 + sy;
-                if (fximgIsOutOfRangeFacing(sy, y0, h, false)) continue;
-                if (fximgIsOutOfRangeFacing(sy, y0, h, true))  break;
+        }
+
+        for (let x = x0; x <= x1; x++, nextErr()) {
+            if (steep) {
+                if (y <  0 || x <  0) continue;
+                if (y >= w || x >= h) break;
+                fximgSetPixel(fxpic, y, x, color);
+            } else {
+                if (x <  0 || y <  0) continue;
+                if (x >= w || y >= h) break;
+                fximgSetPixel(fxpic, x, y, color);
             }
         }
-        return vals;
     }
 
     // 2. drawRect (ขอบ)
