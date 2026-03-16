@@ -265,14 +265,14 @@ namespace helpers {
         const ey = Math.clamp(0, h - 1, y + height - 1);
         if (sx > ex || sy > ey) return;
 
-        const tmpBuf = pins.createBuffer(ey);
+        const tmpBuf = pins.createBuffer(ey - sy + 1);
         tmpBuf.fill(color);
 
-        const buf = pins.createBuffer(ey);
+        const buf = pins.createBuffer(h);
         for (let cx = sx; cx <= ex; cx++) {
             fximgGetRows(fxpic, cx + idx, buf, h);
             buf.write(sy, tmpBuf)
-            fximgSetRows(fxpic, cx + idx, buf, ey);
+            fximgSetRows(fxpic, cx + idx, buf, ey+1);
         }
     }
 

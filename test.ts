@@ -26,6 +26,7 @@ if (1) {
     //    randint(0, w - 1), randint(0, h - 1),
     //    randint(0, w - 1), randint(0, h - 1),
     //)
+    //fximg.fillRect(imgfxb, 50, 30, 60, 60, 3)
     //scene.setBackgroundImage(fximg.toImage(imgfxb))
 }
 
