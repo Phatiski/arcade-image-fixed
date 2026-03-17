@@ -157,20 +157,21 @@ namespace helpers {
 
         const start = fximgStartIndex(fxpic);
         const colStartBit = (x * h) & 1;   // 0 = even (aligned), 1 = odd (misaligned)
-        const pixelCount = len;
 
         let srcIdx = 0;
         let dstByteIdx = start + ((x * h) >>> 1);
 
-        const halfBuf = pins.createBuffer((len + 1) >>> 1);
+        const halfLen = (len + 1) >>> 1;
+        const halfBuf = pins.createBuffer(halfLen);
 
         halfBuf.write(-dstByteIdx, fxpic);
-        halfBuf.toArray(NumberFormat.UInt8LE).forEach((_, i) => {
+        for (let i = 0; i < halfLen; i++) {
             src[srcIdx] &= 0xf; src[srcIdx + 1] &= 0xf;
             if (colStartBit === 0) {
                 if (srcIdx < len - 1) halfBuf[i] = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0xf);
                 else if (srcIdx < len) halfBuf[i] = (src[srcIdx] << 4) + (halfBuf[i] & 0xf);
                 srcIdx += 2;
+                continue;
             } else {
                 if (i === 0) halfBuf[0] = (halfBuf[0] & 0xf0) + (src[srcIdx] & 0xf);
                 else if (srcIdx < len - 1) halfBuf[i] = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0xf);
@@ -178,12 +179,10 @@ namespace helpers {
                 if (i === 0) srcIdx++;
                 else srcIdx += 2;
             }
-        })
+        }
 
         fxpic.write(dstByteIdx, halfBuf);
     }
-
-    const inv0x10 = finv(0x11)
 
     export function fximgGetRows(fxpic: Buffer, x: number, dst: Buffer, h?: number) {
         const fh = fximgHeightOf(fxpic);
@@ -198,16 +197,17 @@ namespace helpers {
         let dstIdx = 0;
         let srcByteIdx = start + ((x * h) >>> 1);
 
-        const halfBuf = pins.createBuffer((len + 1) >>> 1);
+        const halfLen = ((len + 1) >>> 1);
 
         //halfBuf.write(-srcByteIdx, fxpic);
 
-        halfBuf.toArray(NumberFormat.UInt8LE).forEach((_, i) => {
+        for (let i = 0; i < halfLen; i++) {
             const curByte = fxpic[i + srcByteIdx];
             if (colStartBit === 0) {
                 if (dstIdx < len - 1) { dst[dstIdx] = (curByte >>> 4); dst[dstIdx + 1] = (curByte & 0xf); }
                 else if (dstIdx < len) dst[dstIdx] = (curByte >>> 4);
                 dstIdx += 2;
+                continue;
             } else {
                 if (i === 0) dst[dstIdx] = (curByte & 0xf);
                 else if (dstIdx < len - 1) { dst[dstIdx] = (curByte >>> 4); dst[dstIdx + 1] = (curByte & 0xf); }
@@ -215,7 +215,7 @@ namespace helpers {
                 if (i === 0) dstIdx++;
                 else dstIdx += 2;
             }
-        })
+        }
     }
 
     // 4. fill (เติมทั้งภาพ)
