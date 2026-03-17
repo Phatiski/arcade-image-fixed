@@ -147,6 +147,7 @@ namespace helpers {
     }
 
     export function fximgSetRows(fxpic: Buffer, x: number, src: Buffer, h?: number) {
+        if (x < 0) return;
         if (fximgRoCheck(fxpic)) return;
         const fh = fximgHeightOf(fxpic)
         if (h == null) h = fh;
@@ -185,6 +186,7 @@ namespace helpers {
     }
 
     export function fximgGetRows(fxpic: Buffer, x: number, dst: Buffer, h?: number) {
+        if (x < 0) return;
         const fh = fximgHeightOf(fxpic);
         if (h == null) h = fh;
         else h = Math.max(h, fh);

@@ -143,7 +143,7 @@ namespace helpers {
     }
     */
 
-    const HASH_POWER = 16
+    const HASH_POWER = 0xffff
 
     const fximgDataStr = {
         0x0: `width`,

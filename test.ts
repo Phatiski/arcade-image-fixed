@@ -33,17 +33,18 @@ if (1) {
     //fximg.fillTriangle(imgfxb, 80, 30, 130, 80, 120, 20, 3);
     //fximg.drawDistortedImage(imgfxa, imgfxb, 20, 10, 20, 60, 10, 80, 80, 60)
     //fximg.fillPolygon4(imgfxb, 20, 10, 20, 60, 10, 80, 80, 60, 3);
-    fximg.drawTransDistortedImage(imgfxa, imgfxb,
-        randint(0, w - 1), randint(0, h - 1),
-        randint(0, w - 1), randint(0, h - 1),
-        randint(0, w - 1), randint(0, h - 1),
-        randint(0, w - 1), randint(0, h - 1),
-    )
+    //fximg.drawTransDistortedImage(imgfxa, imgfxb,
+    //    randint(0, w - 1), randint(0, h - 1),
+    //    randint(0, w - 1), randint(0, h - 1),
+    //    randint(0, w - 1), randint(0, h - 1),
+    //    randint(0, w - 1), randint(0, h - 1),
+    //)
+    //fximg.drawTransparentImage(imgfxa, imgfxb, 0, -1);
     //fximg.fillRect(imgfxb, 50, 30, 60, 60, 3)
-    scene.setBackgroundImage(fximg.toImage(imgfxb))
+    //scene.setBackgroundImage(fximg.toImage(imgfxb))
 }
 
-/*
+
 basic.forever(() => {
     let j = 8//randint(1, 16);
     for (let i = 0; i < j; i++) {
@@ -63,4 +64,4 @@ basic.forever(() => {
     }
     scene.setBackgroundImage(fximg.toImage(imgfxb));
 })
-*/
+

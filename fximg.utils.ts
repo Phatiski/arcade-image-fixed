@@ -54,23 +54,23 @@ namespace helpers {
         if (yDst === 0) {
             // Fast path: วางตรงหัว column
             fximgSetRows(dst, xDst, srcRow, hSrc);
-        } else {
-            // Slow path: merge กับข้อมูลเดิมที่ yDst
-            fximgGetRows(dst, xDst, dstRow, dstFullH);
-
-            // copy เข้าไปที่ offset yDst
-            for (let y = 0; y < hSrc; y++) {
-                const sy_f = + y * scaleY;
-                const sy = (sy_f + 0.5) | 0;
-
-                if (sy < 0) continue;
-                if (sy >= hSrc) break;
-
-                dstRow[yDst + sy] = srcRow[sy];
-            }
-
-            fximgSetRows(dst, xDst, dstRow, dstFullH);
+            return;
         }
+        // Slow path: merge กับข้อมูลเดิมที่ yDst
+        fximgGetRows(dst, xDst, dstRow, dstFullH);
+
+        // copy เข้าไปที่ offset yDst
+        for (let y = 0; y < hSrc; y++) {
+            const sy_f = + y * scaleY;
+            const sy = (sy_f + 0.5) | 0;
+
+            if (sy < 0) continue;
+            if (sy >= hSrc) break;
+
+            dstRow[yDst + sy] = srcRow[sy];
+        }
+
+        fximgSetRows(dst, xDst, dstRow, dstFullH);
     }
 
     export function fximgBlit(
@@ -265,13 +265,10 @@ namespace helpers {
         const ey = Math.clamp(0, h - 1, y + height - 1);
         if (sx > ex || sy > ey) return;
 
-        const tmpBuf = pins.createBuffer(ey - sy + 1);
-        tmpBuf.fill(color);
-
         const buf = pins.createBuffer(h);
         for (let cx = sx; cx <= ex; cx++) {
             fximgGetRows(fxpic, cx + idx, buf, h);
-            buf.write(sy, tmpBuf)
+            buf.fill(color, sy, ey - sy + 1)
             fximgSetRows(fxpic, cx + idx, buf, ey+1);
         }
     }
@@ -300,10 +297,10 @@ namespace helpers {
             y++;
             if (err <= 0) {
                 err += 2 * y + 1;
-            } else {
-                x--;
-                err += 2 * (y - x) + 1;
+                continue;
             }
+            x--;
+            err += 2 * (y - x) + 1;
         }
     }
 
@@ -324,9 +321,7 @@ namespace helpers {
             fximg.getRows(fxpic, x, buf, h);
             let dy = psqrt(r * r - dx * dx) | 0;
             const offset = cy - dy;
-            const tmpBuf = pins.createBuffer((dy << 1) + Math.min(offset, 0));
-            tmpBuf.fill(color);
-            buf.write(Math.max(offset, 0), tmpBuf);
+            buf.fill(color, Math.max(offset, 0), (dy << 1) + Math.min(offset, 0));
             fximg.setRows(fxpic, x, buf, h);
         }
     }
@@ -402,10 +397,8 @@ namespace helpers {
             if (x >= w) break;
             fximg.getRows(fxpic, x, buf, h);
             let dy = (psqrt(ry2 * (1 - ((dx * dx) * finv(rx2)))) + 0.5) | 0;
-            const offset = cy - dy
-            const tmpBuf = pins.createBuffer((dy << 1) + Math.min(offset, 0));
-            tmpBuf.fill(color);
-            buf.write(Math.max(offset, 0), tmpBuf);
+            const offset = cy - dy;
+            buf.fill(color, Math.max(offset, 0), (dy << 1) + Math.min(offset, 0));
             fximg.setRows(fxpic, x, buf, h);
         }
     }
@@ -434,18 +427,20 @@ namespace helpers {
             if (tx < 0) continue;
             if (tx >= tw) break;
 
-            fximgGetRows(from, sx, rowFrom);
-            fximgGetRows(to, tx, rowTo);
+            fximgGetRows(from, sx, rowFrom, sh);
+            fximgGetRows(to, tx, rowTo, th);
 
-            for (let sy = 0; sy < sh; sy++) {
-                let ty = dy + sy;
-                if (ty < 0) continue;
-                if (ty >= th) break;
-                if (transparent && rowFrom[sy] < 1) continue;
-                if (rowTo[ty] === rowFrom[sy]) continue;
-                rowTo[ty] = rowFrom[sy];
-            }
-            fximgSetRows(to, tx, rowTo);
+            const dyPos = Math.max(dy, 0);
+            const dyNeg = Math.min(dy, 0);
+
+            const tmpRow = pins.createBuffer(sh + dyNeg);
+            if (dyNeg < 0) rowFrom.shift(Math.abs(dyNeg))
+            tmpRow.write(dyPos, rowFrom);
+
+            if (transparent) for (let i = 0; i < (sh + dyNeg); i++) if (tmpRow[i] < 1) tmpRow[i] = rowTo[dyPos + i];
+
+            rowTo.write(dyPos, tmpRow);
+            fximgSetRows(to, tx, rowTo, th);
         }
     }
 
@@ -739,11 +734,9 @@ namespace helpers {
             fximgGetRows(fxpic, x, buf, h);
             const yt = yts[x - x0]
             const yb = ybs[x - x0]
-            const tmpBufSize = Math.abs(yb - yt) + Math.min(yt, 0);
-            if (tmpBufSize < 0) return;
-            const tmpBuf = pins.createBuffer(tmpBufSize);
-            tmpBuf.fill(color);
-            buf.write(Math.max(yt, 0), tmpBuf);
+            const fillSize = Math.abs(yb - yt) + Math.min(yt, 0);
+            if (fillSize < 0) return;
+            buf.fill(color, Math.max(yt, 0), fillSize);
             fximgSetRows(fxpic, x, buf, h);
         }
 
