@@ -233,10 +233,10 @@ namespace fximg {
     export function drawTransparentImage(from: Buffer, fxpic: Buffer, x: number, y: number) { helpers.fximgDrawTransparentImage(from, fxpic, x, y); };
 
     /** */
-    export function drawDistortedImage(from: Buffer, to: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) { helpers.fximgDrawDistortedImage(from, to, x0, y0, x1, y1, x2, y2, x3, y3); };
+    export function drawDistortedImage(from: Buffer, to: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3?: number, y3?: number) { helpers.fximgDrawDistortedImage(from, to, x0, y0, x1, y1, x2, y2, x3, y3); };
 
     /** */
-    export function drawTransDistortedImage(from: Buffer, to: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) { helpers.fximgDrawTransDistortedImage(from, to, x0, y0, x1, y1, x2, y2, x3, y3); };
+    export function drawTransDistortedImage(from: Buffer, to: Buffer, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3?: number, y3?: number) { helpers.fximgDrawTransDistortedImage(from, to, x0, y0, x1, y1, x2, y2, x3, y3); };
 
     /** */
     export function rotate90(from: Buffer, n90: number): Buffer { return helpers.fximgRotate90(from, n90); };

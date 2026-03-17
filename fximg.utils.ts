@@ -92,8 +92,12 @@ namespace helpers {
 
         const dstW = fximgWidthOf(dst);
         const dstH = fximgHeightOf(dst);
+        if ((xDst + wDst < 0 || xDst >= dstW) ||
+            (yDst + hDst < 0 || yDst >= dstH)) return false;
         const srcW = fximgWidthOf(src);
         const srcH = fximgHeightOf(src);
+        if ((xSrc + wSrc < 0 || xSrc >= srcW) ||
+            (ySrc + hSrc < 0 || ySrc >= srcH)) return false;
 
         // คำนวณ scale factor (จริง ๆ คือ ratio)
         const scaleX = wSrc / wDst;
@@ -186,14 +190,16 @@ namespace helpers {
             fximgSetPixel(fxpic, x0, y0, color, idx);
             const e2 = err << 1;
             if (e2 >= -dy) {
-                if (x0 == x1) break;
+                //if (x0 == x1) break;
+                if (isReachingLimit(sx, x0, x1)) break;
                 err -= dy;
                 x0 = x0 + sx;
                 if (fximgIsOutOfRangeFacing(sx, x0, w, false)) continue;
                 if (fximgIsOutOfRangeFacing(sx, x0, w, true))  break;
             }
             if (e2 <= dx) {
-                if (y0 == y1) break;
+                //if (y0 == y1) break;
+                if (isReachingLimit(sy, y0, y1)) break;
                 err += dx;
                 y0 = y0 + sy;
                 if (fximgIsOutOfRangeFacing(sy, y0, h, false)) continue;
@@ -202,12 +208,16 @@ namespace helpers {
         }
     }
 
+    function isReachingLimit(d: number, i: number, n: number) { return (
+        d > 0 ? i >= n : i <= n
+    )}
+
     function interpolate(x0: number, y0: number, x1: number, y1: number, w: number, h: number) {
         //if (fximgIsOutOfArea(x0, y0, w, h) && fximgIsOutOfArea(x1, y1, w, h)) return [];
         x0 |= 0, y0 |= 0;
         x1 |= 0, y1 |= 0;
-        if ((x0 < 0 && x1 < 0) || (x0 >= h && x1 >= w) ||
-            (y0 < 0 && y1 < 0) || (y0 >= w && y1 >= h)) return [];
+        //if ((x0 < 0 && x1 < 0) || (x0 >= h && x1 >= w) ||
+        //    (y0 < 0 && y1 < 0) || (y0 >= w && y1 >= h)) return [];
 
         const dx = Math.abs(x1 - x0);
         const sx = x0 < x1 ? 1 : -1;
@@ -219,20 +229,21 @@ namespace helpers {
         for (let i = 0; ; i++) {
             const e2 = err << 1;
             if (e2 >= -dy) {
-                if (!fximgIsOutOfRangeFacing(sx, x0, w, false) ||
-                    !fximgIsOutOfRangeFacing(sx, x0, w, true)) vals.push(y0);
-                if (x0 == x1) break;
+                vals.push(y0);
+                //if (x0 == x1) break;
+                if (isReachingLimit(sx, x0, x1)) break;
                 err -= dy;
                 x0 = x0 + sx;
                 if (fximgIsOutOfRangeFacing(sx, x0, w, false)) continue;
                 if (fximgIsOutOfRangeFacing(sx, x0, w, true))  break;
             }
             if (e2 <= dx) {
-                if (y0 == y1) break;
+                //if (y0 == y1) break;
+                if (isReachingLimit(sy, y0, y1)) break;
                 err += dx;
                 y0 = y0 + sy;
-                if (fximgIsOutOfRangeFacing(sy, y0, h, false)) continue;
-                if (fximgIsOutOfRangeFacing(sy, y0, h, true))  break;
+                //if (fximgIsOutOfRangeFacing(sy, y0, h, false)) continue;
+                //if (fximgIsOutOfRangeFacing(sy, y0, h, true))  break;
             }
         }
         return vals;
@@ -730,19 +741,19 @@ namespace helpers {
 
         //Draw em
         //TODO: just write to the buffer with fill; place any bitwise operations for dithering patterns thusly
-        const drawX = (x: number) => {
+        const drawX = (x: number, xi: number) => {
             fximgGetRows(fxpic, x, buf, h);
-            const yt = yts[x - x0]
-            const yb = ybs[x - x0]
+            const yt = yts[xi];
+            const yb = ybs[xi];
             const fillSize = Math.abs(yb - yt) + Math.min(yt, 0);
             if (fillSize < 0) return;
             buf.fill(color, Math.max(yt, 0), fillSize);
             fximgSetRows(fxpic, x, buf, h);
         }
 
-        for (let x = x0; x <= x2; x += 2) {
-            drawX(x);
-            drawX(x + 1);
+        for (let x = x0, xi = 0; x <= x2; x++, xi++) {
+            drawX(x, xi);
+            drawX(++x, ++xi);
         }
 
     }
@@ -838,8 +849,8 @@ namespace helpers {
         center?: boolean
     ) {
         if (fximgRoCheck(to)) return;
-        if (x3 == null) x3 = x2 + (x1 - x0);
-        if (y3 == null) y3 = y2 + (y1 - y0);
+        if (x3 === undefined) x3 = x0 + (x2 - x1);
+        if (y3 === undefined) y3 = y0 + (y2 - y1);
 
         const w   = fximgWidthOf(from);
         const h   = fximgHeightOf(from);
@@ -861,10 +872,10 @@ namespace helpers {
         );
 
         for (let sx = 0; sx < w; sx++) {
-            const ix = center ? fximgZigzet(0, w - 1, sx, true) : sx;
+            const ix = sx//center ? fximgZigzet(0, w - 1, sx) : sx;
             fximgGetRows(from, w - ix - 1, fromRowBuf, h);  // ใช้ w - ix -1 เหมือน polymesh (reverse ถ้า center)
 
-            if (fromRowBuf.hash(0xffff) === emptyHash) continue;
+            //if (fromRowBuf.hash(0xffff) === emptyHash) continue;
 
             const u0 = (ix * wInv);
             const u1 = ((ix + 1) * wInv);
@@ -888,7 +899,7 @@ namespace helpers {
             );
 
             for (let sy = 0; sy < h; sy++) {
-                const iy = center ? fximgZigzet(0, h - 1, sy, true) : sy;
+                const iy = sy;//center ? fximgZigzet(0, h - 1, sy) : sy;
 
                 const color = fromRowBuf[iy];  // pixel แถวบนสุดหลัง shift
                 if (transparent && color < 1) continue;      // transparent
