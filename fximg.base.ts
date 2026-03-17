@@ -147,7 +147,6 @@ namespace helpers {
     }
 
     export function fximgSetRows(fxpic: Buffer, x: number, src: Buffer, h?: number) {
-        if (x < 0) return;
         if (fximgRoCheck(fxpic)) return;
         const fh = fximgHeightOf(fxpic)
         if (h == null) h = fh;
@@ -162,31 +161,30 @@ namespace helpers {
         let srcIdx = 0;
         let dstByteIdx = start + ((x * h) >>> 1);
 
-        const halfLen = (len + 1) >>> 1;
-        const halfBuf = pins.createBuffer(halfLen);
-
-        halfBuf.write(-dstByteIdx, fxpic);
-        for (let i = 0; i < halfLen; i++) {
-            src[srcIdx] &= 0xf; src[srcIdx + 1] &= 0xf;
-            if (colStartBit === 0) {
-                if (srcIdx < len - 1) halfBuf[i] = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0xf);
-                else if (srcIdx < len) halfBuf[i] = (src[srcIdx] << 4) + (halfBuf[i] & 0xf);
-                srcIdx += 2;
-                continue;
-            } else {
-                if (i === 0) halfBuf[0] = (halfBuf[0] & 0xf0) + (src[srcIdx] & 0xf);
-                else if (srcIdx < len - 1) halfBuf[i] = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0xf);
-                else if (srcIdx < len) halfBuf[i] = (src[srcIdx] << 4) + (halfBuf[i] & 0xf);
-                if (i === 0) srcIdx++;
-                else srcIdx += 2;
-            }
+        if (colStartBit === 0) {
+            // Fast path: aligned → copy byte-wise ได้เลย
+            // src[0] ไป nybble สูงของ byte แรก, src[1] ไป nybble ต่ำ, ฯลฯ
+            for (;srcIdx < len - 1; srcIdx += 2, dstByteIdx++)
+                fxpic[dstByteIdx] = (src[srcIdx] << 0x4) + (src[srcIdx + 1] & 0x0f);
+            // เหลือพิกเซลสุดท้าย (ถ้า len เป็น odd)
+            if (srcIdx < len)
+                fxpic[dstByteIdx] = (src[srcIdx] << 0x4) + (fxpic[dstByteIdx] & 0x0f);
+            return;
         }
-
-        fxpic.write(dstByteIdx, halfBuf);
+        // Misaligned path: เริ่มจาก nybble ต่ำของ byte แรก
+        // จัดการ byte แรกแยก (merge กับ nybble เดิม)
+        if (srcIdx < len)
+            fxpic[dstByteIdx] = (fxpic[dstByteIdx] & 0xf0) + (src[srcIdx] & 0x0f),
+            srcIdx++, dstByteIdx++;
+        // จากนั้น copy แบบ aligned เหมือน fast path
+        for (;srcIdx < len - 1; srcIdx += 2, dstByteIdx++)
+            fxpic[dstByteIdx] = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0x0f);
+        // เหลือตัวสุดท้าย (ถ้ามี)
+        if (srcIdx < pixelCount)
+            fxpic[dstByteIdx] = (src[srcIdx] << 4) + (fxpic[dstByteIdx] & 0x0f);
     }
 
     export function fximgGetRows(fxpic: Buffer, x: number, dst: Buffer, h?: number) {
-        if (x < 0) return;
         const fh = fximgHeightOf(fxpic);
         if (h == null) h = fh;
         else h = Math.max(h, fh);
@@ -199,25 +197,28 @@ namespace helpers {
         let dstIdx = 0;
         let srcByteIdx = start + ((x * h) >>> 1);
 
-        const halfLen = ((len + 1) >>> 1);
+        let tmpByte = 0x00;
 
-        //halfBuf.write(-srcByteIdx, fxpic);
-
-        for (let i = 0; i < halfLen; i++) {
-            const curByte = fxpic[i + srcByteIdx];
-            if (colStartBit === 0) {
-                if (dstIdx < len - 1) { dst[dstIdx] = (curByte >>> 4); dst[dstIdx + 1] = (curByte & 0xf); }
-                else if (dstIdx < len) dst[dstIdx] = (curByte >>> 4);
-                dstIdx += 2;
-                continue;
-            } else {
-                if (i === 0) dst[dstIdx] = (curByte & 0xf);
-                else if (dstIdx < len - 1) { dst[dstIdx] = (curByte >>> 4); dst[dstIdx + 1] = (curByte & 0xf); }
-                else if (dstIdx < len) dst[dstIdx] = (curByte >>> 4);
-                if (i === 0) dstIdx++;
-                else dstIdx += 2;
-            }
+        if (colStartBit === 0) {
+            // Aligned: byte-wise extract
+            for (;dstIdx < len - 1; dstIdx += 2, srcByteIdx++)
+                tmpByte = fxpic[srcByteIdx],
+                dst[dstIdx] = tmpByte >>> 4,
+                dst[dstIdx + 1] = tmpByte & 0x0f;
+            if (dstIdx < len)
+                dst[dstIdx] = fxpic[srcByteIdx] >>> 4;
+            return;
         }
+        // Misaligned
+        if (dstIdx < len)
+            dst[dstIdx] = fxpic[srcByteIdx] & 0x0f,
+            dstIdx++, srcByteIdx++;
+        for (;dstIdx < len - 1; dstIdx += 2, srcByteIdx++)
+            tmpByte = fxpic[srcByteIdx],
+            dst[dstIdx] = b >>> 4,
+            dst[dstIdx + 1] = b & 0xF;
+        if (dstIdx < len)
+            dst[dstIdx] = fxpic[srcByteIdx] >>> 4;
     }
 
     // 4. fill (เติมทั้งภาพ)
