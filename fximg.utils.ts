@@ -92,12 +92,12 @@ namespace helpers {
 
         const dstW = fximgWidthOf(dst);
         const dstH = fximgHeightOf(dst);
-        if ((xDst + wDst < 0 || xDst >= dstW) ||
-            (yDst + hDst < 0 || yDst >= dstH)) return false;
+        //if ((xDst + wDst < 0 || xDst >= dstW) ||
+        //    (yDst + hDst < 0 || yDst >= dstH)) return false;
         const srcW = fximgWidthOf(src);
         const srcH = fximgHeightOf(src);
-        if ((xSrc + wSrc < 0 || xSrc >= srcW) ||
-            (ySrc + hSrc < 0 || ySrc >= srcH)) return false;
+        //if ((xSrc + wSrc < 0 || xSrc >= srcW) ||
+        //    (ySrc + hSrc < 0 || ySrc >= srcH)) return false;
 
         // คำนวณ scale factor (จริง ๆ คือ ratio)
         const scaleX = wSrc / wDst;
@@ -110,12 +110,12 @@ namespace helpers {
         let clipHSrc = hSrc;
 
         if (xDst < 0) { clipWDst += xDst; clipWSrc += xDst; xSrc -= xDst; xDst = 0; }
-        if (yDst < 0) { clipHDst += yDst; clipWSrc += xDst; ySrc -= yDst; yDst = 0; }
+        if (yDst < 0) { clipHDst += yDst; clipHSrc += yDst; ySrc -= yDst; yDst = 0; }
         if (xDst + clipWDst > dstW) clipWDst = dstW - xDst;
         if (yDst + clipHDst > dstH) clipHDst = dstH - yDst;
 
         if (xSrc < 0) { clipWDst += xSrc; clipWSrc += xSrc; xSrc = 0; }
-        if (ySrc < 0) { clipHDst += ySrc; clipHSrc += xSrc; ySrc = 0; }
+        if (ySrc < 0) { clipHDst += ySrc; clipHSrc += ySrc; ySrc = 0; }
         if (xSrc + clipWSrc > srcW) clipWSrc = srcW - xSrc;
         if (ySrc + clipHSrc > srcH) clipHSrc = srcH - ySrc;
 
@@ -123,29 +123,29 @@ namespace helpers {
 
         // ถ้า transparent=false และ check=false → อาจ optimize เร็วขึ้น แต่เวอร์ชันนี้ทำแบบ general ก่อน
 
-        const safeSrcH = ySrc + clipHSrc;
+        const safeSrcH = clipHSrc + ySrc;
         const srcRow = pins.createBuffer(safeSrcH);     // buffer ขนาดสูงสุดที่ copy จริง
-        const safeDstH = yDst + clipHDst;
+        const safeDstH = clipHDst + yDst;
         const dstRow = pins.createBuffer(safeDstH);     // buffer เต็ม column ของ dst
 
         let anyChange = false, rowChange = false;
         let curSx = -1;
 
         for (let x = 0; x < clipWDst; x++, rowChange = false) {
-            const sx = xSrc + ((x * scaleX) + 0.5) | 0;
+            const sx = ((x * scaleX) | 0) + xSrc;
             if (sx < 0) continue;
             if (sx >= clipWSrc) break;
-            const dx = xDst + x;
+            const dx = x + xDst;
 
             // ดึง column ส่วนที่ต้องการจาก src (offset ySrc)
             if (sx !== curSx) fximgGetRows(src, sx, srcRow, safeSrcH), curSx = sx;
             fximgGetRows(dst, dx, dstRow, safeDstH);
 
             for (let y = 0; y < clipHDst; y++) {
-                const sy = ySrc + ((y * scaleY) + 0.5) | 0;
+                const sy = ((y * scaleY) | 0) + ySrc;
                 if (sy < 0) continue;
                 if (sy >= clipHSrc) break;
-                const dy = yDst + y;
+                const dy = y + yDst;
                 const newPixel = srcRow[sy];  // pixel จาก src (หลัง shift ySrc แล้ว)
 
                 if (transparent && newPixel < 1) continue;

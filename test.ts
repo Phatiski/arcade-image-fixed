@@ -14,7 +14,7 @@ const w = fximg.widthOf(imgfxb), h = fximg.heightOf(imgfxb);
 
 if (1) {
     //imgfxa[6] = 0x00
-    fximg.blit(imgfxb, 5, 3, 50, 30, imgfxa, 0, 0, 5, 3, false, false);
+    //fximg.blit(imgfxb, 5, 3, 50, 30, imgfxa, 0, 0, 5, 3, false, false);
     //fximg.drawLine(imgfxb, 20, 32, 140, 100, 3);
     //fximg.fillRect(imgfxb, 4, 4, 16, 16, 3);
     //fximg.fillTriangle(imgfxb, 80, 30, 130, 80, 120, 20, 3);
@@ -28,10 +28,10 @@ if (1) {
     //)
     //fximg.drawTransparentImage(imgfxa, imgfxb, 0, -1);
     //fximg.fillRect(imgfxb, 50, 30, 60, 60, 3)
-    scene.setBackgroundImage(fximg.toImage(imgfxb))
+    //scene.setBackgroundImage(fximg.toImage(imgfxb))
 }
 
-/*
+
 basic.forever(() => {
     let j = 1//randint(1, 16);
     for (let i = 0; i < j; i++) {
@@ -54,8 +54,8 @@ basic.forever(() => {
             randint(0, w - 1), randint(0, h - 1),
             randint(0x0, 0xf),
         );
-        scene.setBackgroundImage(fximg.toImage(imgfxb));
+        //scene.setBackgroundImage(fximg.toImage(imgfxb));
     }
-    //scene.setBackgroundImage(fximg.toImage(imgfxb));
+    scene.setBackgroundImage(fximg.toImage(imgfxb));
 })
-*/
+

@@ -180,7 +180,7 @@ namespace helpers {
         for (;srcIdx < len - 1; srcIdx += 2, dstByteIdx++)
             fxpic[dstByteIdx] = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0x0f);
         // เหลือตัวสุดท้าย (ถ้ามี)
-        if (srcIdx < pixelCount)
+        if (srcIdx < len)
             fxpic[dstByteIdx] = (src[srcIdx] << 4) + (fxpic[dstByteIdx] & 0x0f);
     }
 
@@ -215,8 +215,8 @@ namespace helpers {
             dstIdx++, srcByteIdx++;
         for (;dstIdx < len - 1; dstIdx += 2, srcByteIdx++)
             tmpByte = fxpic[srcByteIdx],
-            dst[dstIdx] = b >>> 4,
-            dst[dstIdx + 1] = b & 0xF;
+            dst[dstIdx] = tmpByte >>> 4,
+            dst[dstIdx + 1] = tmpByte & 0x0f;
         if (dstIdx < len)
             dst[dstIdx] = fxpic[srcByteIdx] >>> 4;
     }
