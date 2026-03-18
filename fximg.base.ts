@@ -1,21 +1,21 @@
 
 namespace helpers {
 
-    export function fximgRoCheck(fxpic: Buffer) {
+    export function fximgRoCheck(fxpic: Fximg) {
         if (fximgIsReadonly(fxpic)) { throw "this fixed image is read-only"; return true; };
         return false
     }
 
-    export function fximgCreateFrame(width: number, height: number, length: number, ro?: boolean): Buffer {
+    export function fximgCreateFrame(width: number, height: number, length: number, ro?: boolean): Fximg {
         if (!length) length = 1;
-        return fximgInit(width, height, length, ro);
+        return fximgInit(width, height, length, ro) as Fximg;
     }
 
-    export function fximgCreate(width: number, height: number, ro?: boolean): Buffer {
-        return fximgCreateFrame(width, height, 1, ro);
+    export function fximgCreate(width: number, height: number, ro?: boolean): Fximg {
+        return fximgCreateFrame(width, height, 1, ro) as Fximg;
     }
 
-    export function fximgFromImage(pic: Image, ro?: boolean): Buffer {
+    export function fximgFromImage(pic: Image, ro?: boolean): Fximg {
         const fxpic = fximgCreate(pic.width, pic.height);
         if (fximgIsEmptyImage(pic)) return fxpic;
         const h = pic.height
@@ -25,10 +25,10 @@ namespace helpers {
             fximgSetRows(fxpic, x, buf, h);
         }
         if (ro) fximgSetReadonly(fxpic, true);
-        return fxpic;
+        return fxpic as Fximg;
     }
 
-    export function fximgToImage(fxpic: Buffer): Image {
+    export function fximgToImage(fxpic: Fximg): Image {
         const pic = image.create(fximgWidthOf(fxpic), fximgHeightOf(fxpic));
         const h = pic.height;
         const buf = pins.createBuffer(h);
@@ -50,7 +50,7 @@ namespace helpers {
         return cur
     }
 
-    export function fximgFromFrame(pics: Image[], ro?: boolean): Buffer {
+    export function fximgFromFrame(pics: Image[], ro?: boolean): Fximg {
         const allSize = fximgMaxImgSizes(pics);
         const fxpics = fximgCreateFrame(allSize.width, allSize.height, pics.length);
         if (allSize.empty >= pics.length) return fxpics;
@@ -70,10 +70,10 @@ namespace helpers {
             nw += allSize.width;
         }
         if (ro) fximgSetReadonly(fxpics, ro);
-        return fxpics;
+        return fxpics as Fximg;
     }
 
-    export function fximgToFrame(fxpics: Buffer): Image[] {
+    export function fximgToFrame(fxpics: Fximg): Image[] {
         const pics: Image[] = []
         const pic = image.create(fximgWidthOf(fxpics), fximgHeightOf(fxpics));
         const h = pic.height;
@@ -89,7 +89,7 @@ namespace helpers {
         return pics.slice();
     }
 
-    export function fximgGetFrame(fxpics: Buffer, idx: number) {
+    export function fximgGetFrame(fxpics: Fximg, idx: number): Fximg {
         const w = fximgWidthOf(fxpics);
         const h = fximgHeightOf(fxpics);
         const fxpic = fximgCreate(w, h);
@@ -99,10 +99,10 @@ namespace helpers {
             fximgGetRows(fxpics, x + idxw, tbuf, h);
             fximgSetRows(fxpic, x, tbuf, h);
         }
-        return fxpic.slice();
+        return fxpic.slice() as Fximg;
     }
 
-    export function fximgSetFrame(fxpics: Buffer, idx: number, fxpic: Buffer) {
+    export function fximgSetFrame(fxpics: Fximg, idx: number, fxpic: Fximg) {
         if (fximgRoCheck(fxpics)) return;
         const fw = fximgWidthOf(fxpics), fh = fximgHeightOf(fxpics);
         const vw = fximgWidthOf(fxpic), vh = fximgHeightOf(fxpic);
@@ -118,7 +118,7 @@ namespace helpers {
         }
     }
 
-    export function fximgSetPixel(fxpic: Buffer, x: number, y: number, color: number, idx?: number) {
+    export function fximgSetPixel(fxpic: Fximg, x: number, y: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         if (fximgIsOutOfArea(x, y, fximgWidthOf(fxpic), fximgHeightOf(fxpic))) return;
         idx = idx || 0; idx *= fximgWidthOf(fxpic)
@@ -126,27 +126,27 @@ namespace helpers {
         x |= 0; y |= 0;
         const i = fximgPos2idx(x + idx, fximgHeightOf(fxpic), y);
         const ih4 = (i >>> 1) + fximgStartIndex(fxpic);
-        const curv = fxpic[ih4]
+        const curv = (fxpic as Buffer)[ih4]
         let nib0 = curv & 0xf,
             nib1 = curv >>> 4;
         if (i & 1 ? nib0 === color : nib1 === color) return;
         if (i & 1) nib0 = color;
         else nib1 = color;
-        fxpic[ih4] = (nib1 << 4) + nib0;
+        (fxpic as Buffer)[ih4] = (nib1 << 4) + nib0;
     }
 
-    export function fximgGetPixel(fxpic: Buffer, x: number, y: number, idx?: number) {
+    export function fximgGetPixel(fxpic: Fximg, x: number, y: number, idx?: number) {
         if (fximgIsOutOfArea(x, y, fximgWidthOf(fxpic), fximgHeightOf(fxpic))) return 0;
         idx = idx || 0; idx *= fximgWidthOf(fxpic);
         x |= 0; y |= 0;
         const i = fximgPos2idx(x + idx, fximgHeightOf(fxpic), y);
         const ih = i >>> 1;
         const ih4 = ih + fximgStartIndex(fxpic);
-        const curv = fxpic[ih4];
+        const curv = (fxpic as Buffer)[ih4];
         return (i & 1 ? curv & 0xf : curv >>> 4)
     }
 
-    export function fximgSetRows(fxpic: Buffer, x: number, src: Buffer, h?: number) {
+    export function fximgSetRows(fxpic: Fximg, x: number, src: Buffer, h?: number) {
         if (fximgRoCheck(fxpic)) return;
         const fh = fximgHeightOf(fxpic)
         if (h == null) h = fh;
@@ -165,26 +165,26 @@ namespace helpers {
             // Fast path: aligned → copy byte-wise ได้เลย
             // src[0] ไป nybble สูงของ byte แรก, src[1] ไป nybble ต่ำ, ฯลฯ
             for (;srcIdx < len - 1; srcIdx += 2, dstByteIdx++)
-                fxpic[dstByteIdx] = (src[srcIdx] << 0x4) + (src[srcIdx + 1] & 0x0f);
+                (fxpic as Buffer)[dstByteIdx] = (src[srcIdx] << 0x4) + (src[srcIdx + 1] & 0x0f);
             // เหลือพิกเซลสุดท้าย (ถ้า len เป็น odd)
             if (srcIdx < len)
-                fxpic[dstByteIdx] = (src[srcIdx] << 0x4) + (fxpic[dstByteIdx] & 0x0f);
+                (fxpic as Buffer)[dstByteIdx] = (src[srcIdx] << 0x4) + ((fxpic as Buffer)[dstByteIdx] & 0x0f);
             return;
         }
         // Misaligned path: เริ่มจาก nybble ต่ำของ byte แรก
         // จัดการ byte แรกแยก (merge กับ nybble เดิม)
         if (srcIdx < len)
-            fxpic[dstByteIdx] = (fxpic[dstByteIdx] & 0xf0) + (src[srcIdx] & 0x0f),
+            (fxpic as Buffer)[dstByteIdx] = ((fxpic as Buffer)[dstByteIdx] & 0xf0) + (src[srcIdx] & 0x0f),
             srcIdx++, dstByteIdx++;
         // จากนั้น copy แบบ aligned เหมือน fast path
         for (;srcIdx < len - 1; srcIdx += 2, dstByteIdx++)
-            fxpic[dstByteIdx] = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0x0f);
+            (fxpic as Buffer)[dstByteIdx] = (src[srcIdx] << 4) + (src[srcIdx + 1] & 0x0f);
         // เหลือตัวสุดท้าย (ถ้ามี)
         if (srcIdx < len)
-            fxpic[dstByteIdx] = (src[srcIdx] << 4) + (fxpic[dstByteIdx] & 0x0f);
+            (fxpic as Buffer)[dstByteIdx] = (src[srcIdx] << 4) + ((fxpic as Buffer)[dstByteIdx] & 0x0f);
     }
 
-    export function fximgGetRows(fxpic: Buffer, x: number, dst: Buffer, h?: number) {
+    export function fximgGetRows(fxpic: Fximg, x: number, dst: Buffer, h?: number) {
         const fh = fximgHeightOf(fxpic);
         if (h == null) h = fh;
         else h = Math.max(h, fh);
@@ -202,27 +202,27 @@ namespace helpers {
         if (colStartBit === 0) {
             // Aligned: byte-wise extract
             for (;dstIdx < len - 1; dstIdx += 2, srcByteIdx++)
-                tmpByte = fxpic[srcByteIdx],
+                tmpByte = (fxpic as Buffer)[srcByteIdx],
                 dst[dstIdx] = tmpByte >>> 4,
                 dst[dstIdx + 1] = tmpByte & 0x0f;
             if (dstIdx < len)
-                dst[dstIdx] = fxpic[srcByteIdx] >>> 4;
+                dst[dstIdx] = (fxpic as Buffer)[srcByteIdx] >>> 4;
             return;
         }
         // Misaligned
         if (dstIdx < len)
-            dst[dstIdx] = fxpic[srcByteIdx] & 0x0f,
+            dst[dstIdx] = (fxpic as Buffer)[srcByteIdx] & 0x0f,
             dstIdx++, srcByteIdx++;
         for (;dstIdx < len - 1; dstIdx += 2, srcByteIdx++)
-            tmpByte = fxpic[srcByteIdx],
+            tmpByte = (fxpic as Buffer)[srcByteIdx],
             dst[dstIdx] = tmpByte >>> 4,
             dst[dstIdx + 1] = tmpByte & 0x0f;
         if (dstIdx < len)
-            dst[dstIdx] = fxpic[srcByteIdx] >>> 4;
+            dst[dstIdx] = (fxpic as Buffer)[srcByteIdx] >>> 4;
     }
 
     // 4. fill (เติมทั้งภาพ)
-    export function fximgFill(fxpic: Buffer, color: number, idx?: number) {
+    export function fximgFill(fxpic: Fximg, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
@@ -236,7 +236,7 @@ namespace helpers {
     }
 
     // 5. replace (แทนที่สี)
-    export function fximgReplace(fxpic: Buffer, from: number, to: number, idx?: number) {
+    export function fximgReplace(fxpic: Fximg, from: number, to: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         from &= 0xF; to &= 0xF;
         idx = idx || 0;
@@ -252,22 +252,22 @@ namespace helpers {
         }
     }
 
-    export function fximgEqualTo(fxpic: Buffer, otherfxpic: Buffer) {
-        if (fxpic.length < 1 || otherfxpic.length < 1) return false;
-        if (fxpic.length !== otherfxpic.length) return false;
+    export function fximgEqualTo(fxpic: Fximg, otherfxpic: Fximg) {
+        if ((fxpic as Buffer).length < 1 || (otherfxpic as Buffer).length < 1) return false;
+        if ((fxpic as Buffer).length !== (otherfxpic as Buffer).length) return false;
         if (fximgWidthOf(fxpic) !== fximgWidthOf(otherfxpic) ||
             fximgHeightOf(fxpic) !== fximgHeightOf(otherfxpic)) return false
-        return fxpic.equals(otherfxpic);
+        return (fxpic as Buffer).equals(otherfxpic);
     }
 
     // 10. copyFrom (copy ทั้ง buffer ถ้าขนาดเท่ากัน)
-    export function fximgCopyFrom(fxpic: Buffer, from: Buffer) {
+    export function fximgCopyFrom(fxpic: Fximg, from: Fximg) {
         if (fximgRoCheck(fxpic)) return;
         const w = Math.min(fximgWidthOf(from), fximgWidthOf(fxpic));
         const h = Math.min(fximgHeightOf(from), fximgHeightOf(fxpic))
         if (w < 1 || h < 1) return;
-        if (from.length === fxpic.length) {
-            fxpic.write(0, from);
+        if ((from as Buffer).length === (fxpic as Buffer).length) {
+            (fxpic as Buffer).write(0, (from as Buffer));
             return;
         }
         const buf = pins.createBuffer(h);
@@ -278,8 +278,8 @@ namespace helpers {
     }
 
     // 11. clone
-    export function fximgClone(fxpic: Buffer): Buffer {
-        return fxpic.slice();
+    export function fximgClone(fxpic: Fximg): Fximg {
+        return (fxpic as Buffer).slice() as Fximg;
     }
     
 }

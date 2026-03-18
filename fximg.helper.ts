@@ -8,14 +8,15 @@ enum FximgDataIdx {
 
 namespace helpers {
 
-    export const PI0_1     = Math.PI * 0.1;
-    export const PI0_2     = Math.PI * 0.2;
-    const PI0_0111_ = Math.PI * 0.111111111111111;
+    export let fximgValidate = false;
 
-    export function finv(x: number): number {
+    //export const PI0_1     = Math.PI * 0.1;
+    //export const PI0_2     = Math.PI * 0.2;
+    //const PI0_0111_ = Math.PI * 0.111111111111111;
+
+    export function fximgFinv(x: number): number {
         if (x === 0) return Infinity;
-        if (x < 0) return -finv(-x);
-        x += PI0_0111_;
+        if (x < 0) return -fximgFinv(-x);
 
         // 1. Range Scaling
         // ปรับ x ให้อยู่ในช่วง [0.5, 1.0] เพื่อความแม่นยำของพหุนาม
@@ -48,7 +49,7 @@ namespace helpers {
      * - ความแม่นยำ: ปานกลาง (Error ~0.001)
      * - ช่วงผลลัพธ์: [-1.0, 1.0] แน่นอน
      */
-    export function fsin(x: number): number {
+    export function fximgFsin(x: number): number {
         // 1. Range Reduction & Folding
         // ปรับ x ให้อยู่ในช่วง [-PI, PI]
         x += PI;
@@ -72,11 +73,11 @@ namespace helpers {
     /**
      * Cosine โดยการเลื่อนเฟส
      */
-    export function fcos(x: number): number {
-        return fsin(x + 1.57079633); // x + PI/2
+    export function fximgFcos(x: number): number {
+        return fximgFsin(x + 1.57079633); // x + PI/2
     }
 
-    export function psqrt(x: number): number {
+    export function fximgPsqrt(x: number): number {
         if (x <= 0) return 0;
         if (x === Infinity) return Infinity;
 
@@ -188,83 +189,102 @@ signture mismatch:
 `
     }
 
-    function fximgMakeHeaderHash(fximg: Buffer) {
-        const buf = fximg.slice(1, 1);
+    function fximgMakeHeaderHash(fximg: Fximg) {
+        const buf = (fximg as Buffer).slice(1, 1);
         return buf.hash(HASH_POWER) & 0xff;
     }
 
-    function fximgIsValidHeader(fximg: Buffer): boolean {
-        return fximgMakeHeaderHash(fximg) === fximg[0];
+    function fximgIsValidHeader(fximg: Fximg): boolean {
+        return fximgMakeHeaderHash(fximg) === (fximg as Buffer)[0];
     }
 
-    function fximgHeaderCheck(fximg: Buffer) {
+    function fximgHeaderCheck(fximg: Fximg) {
         if (fximgIsValidHeader(fximg)) return;
         const hash = fximgMakeHeaderHash(fximg)
-        fximgHashAlert(fximg[0], hash)
+        fximgHashAlert((fximg as Buffer)[0], hash)
     }
 
-    function fximgMakeMetadataHash(fximg: Buffer) {
-        return fximg.slice(3, fximgStartIndex(fximg) - 3).hash(HASH_POWER) & 0xff;
+    function fximgMakeMetadataHash(fximg: Fximg) {
+        return (fximg as Buffer).slice(3, fximgStartIndex(fximg) - 4).hash(HASH_POWER) & 0xff;
     }
 
-    function fximgIsValidMetadata(fximg: Buffer) {
-        return fximg[2] === fximgMakeMetadataHash(fximg);
+    function fximgIsValidMetadata(fximg: Fximg) {
+        return (fximg as Buffer)[2] === fximgMakeMetadataHash(fximg);
     }
 
-    function fximgValidation(fximg: Buffer) {
+    function fximgMakeOffsetHash(fximg: Fximg) {
+        return (fximg as Buffer).slice((fximg as Buffer).length - 5, 4).hash(HASH_POWER) & 0xff;
+    }
+
+    function fximgIsValidOffset(fximg: Fximg) {
+        return fximgMakeOffsetHash(fximg) === (fximg as Buffer)[(fximg as Buffer).length - 1];
+    }
+
+    function fximgValidation(fximg: Fximg) {
+        if (!fximgValidate) return;
         fximgHeaderCheck(fximg);
+        if (fximgIsValidOffset(fximg)) return;
         if (fximgIsValidMetadata(fximg)) return;
         const hash = fximgMakeMetadataHash(fximg);
-        fximgHashAlert(fximg[2], hash);
+        fximgHashAlert((fximg as Buffer)[2], hash);
     }
 
     // อ่าน flag
-    export function fximgIsReadonly(fximg: Buffer): boolean {
-        if (fximg.length < 1) return false;
-        return (fximg[1] & 0b10000000) !== 0;  // bit7
+    export function fximgIsReadonly(fximg: Fximg): boolean {
+        if ((fximg as Buffer).length < 1) return false;
+        return ((fximg as Buffer)[1] & 0b10000000) !== 0;  // bit7
     }
 
-    export function fximgIsMetadataFrozen(fximg: Buffer): boolean {
-        if (fximg.length < 1) return false;
-        return (fximg[1] & 0b01000000) !== 0;  // bit6
+    export function fximgIsMetadataFrozen(fximg: Fximg): boolean {
+        if ((fximg as Buffer).length < 1) return false;
+        return ((fximg as Buffer)[1] & 0b01000000) !== 0;  // bit6
     }
 
     // ตั้ง flag (แต่ต้องเช็คก่อนว่าอนุญาตไหม)
-    export function fximgSetReadonly(fximg: Buffer, value: boolean) {
-        fximgHeaderCheck(fximg);
+    export function fximgSetReadonly(fximg: Fximg, value: boolean) {
+        if (fximgValidate) fximgHeaderCheck(fximg);
         //if (fximgIsMetadataFrozen(fximg)) return; // ห้ามแก้ถ้า freeze
         const changed = fximgIsReadonly(fximg) !== value;
-        if (value) fximg[1] |= 0b10000000;
-        else fximg[1] &= ~0b10000000;
+        if (value) (fximg as Buffer)[1] |= 0b10000000;
+        else (fximg as Buffer)[1] &= ~0b10000000;
         if (!changed) return;
-        fximg[0] = fximgMakeHeaderHash(fximg);
+        (fximg as Buffer)[0] = fximgMakeHeaderHash(fximg);
     }
 
-    function fximgSetMetadataFrozen(fximg: Buffer, value: boolean) {
-        fximgHeaderCheck(fximg);
+    function fximgSetMetadataFrozen(fximg: Fximg, value: boolean) {
+        if (fximgValidate) fximgHeaderCheck(fximg);
         if (fximgIsReadonly(fximg)) return; // ถ้า readonly แล้ว ห้าม set flag อื่น
         const changed = fximgIsMetadataFrozen(fximg) !== value;
-        if (value) fximg[1] |= 0b01000000;
-        else fximg[1] &= ~0b01000000;
+        if (value) (fximg as Buffer)[1] |= 0b01000000;
+        else (fximg as Buffer)[1] &= ~0b01000000;
         if (!changed) return;
-        fximg[0] = fximgMakeHeaderHash(fximg);
+        (fximg as Buffer)[0] = fximgMakeHeaderHash(fximg);
     }
 
-    export function fximgInit(width: number, height: number, length: number, ro?: boolean) {
+    export function fximgInit(width: number, height: number, length: number, ro?: boolean): Fximg {
         const md = fximgInitMD(width, height, length);
-        const fxpic = pins.createBuffer(md.start + ((1 + (width * height * length)) >>> 1));
-        fxpic[0] = md.hash;
-        fxpic[1] = md.header;
+        const fxpic = pins.createBuffer(md.start + ((1 + (width * height * length)) >>> 1) + 5) as Fximg;
+        (fxpic as Buffer)[0] = md.hash;
+        (fxpic as Buffer)[1] = md.header;
         fximgSetData(fxpic, 0x0, width);
         fximgSetData(fxpic, 0x1, height);
         fximgSetData(fxpic, 0x2, length);
+        const offsetData = pins.createBuffer(4);
+        offsetData[0] = fximgGetIndex(fxpic, 0x0).idx & 0xff;
+        offsetData[1] = fximgGetIndex(fxpic, 0x1).idx & 0xff;
+        offsetData[2] = fximgGetIndex(fxpic, 0x2).idx & 0xff;
+        offsetData[3] = fximgGetIndex(fxpic, 0x3).idx & 0xff;
+        const offsetHash = offsetData.hash(HASH_POWER) & 0xff;
+        (fxpic as Buffer).write((fxpic as Buffer).length - 5, offsetData);
+        let text = fximgStartIndex(fxpic);
+        (fxpic as Buffer)[(fxpic as Buffer).length - 1] = offsetHash;
         fximgSetMetadataFrozen(fxpic, true);
         if (ro) fximgSetReadonly(fxpic, true);
-        return fxpic
+        return fxpic as Fximg;
     }
 
-    export function fximgGetOffset(header: number, hash: number, idxType: FximgDataIdx) {
-        fximgHeaderCheck(pins.createBufferFromArray([hash, header]));
+    export function fximgGetOffsetUtils(header: number, hash: number, idxType: FximgDataIdx) {
+        fximgHeaderCheck(pins.createBufferFromArray([hash, header]) as Fximg);
         if (idxType < 0x0 || idxType > 0x3) return { idx: -1, b2: -1 }
         header &= 0xff;
         let idx = 3, b2 = 0;
@@ -285,57 +305,63 @@ signture mismatch:
         }
         return { idx: idx, b2: b2 }
     }
-    export function fximgStartIndex(fximg: Buffer) {
-        return fximgGetOffset(fximg[1], fximg[0], 0x3).idx;
+    export function fximgGetIndex(fximg: Fximg, idxType: FximgDataIdx) {
+        return fximgGetOffsetUtils((fximg as Buffer)[1], (fximg as Buffer)[0], idxType);
     }
-    export function fximgSetData(fximg: Buffer, dataType: FximgDataIdx, v: number) {
+    export function fximgGetOffset(fxpic: Fximg, idxType: FximgDataIdx): number {
+        return (fxpic as Buffer)[idxType + ((fxpic as Buffer).length - 5)]
+    }
+    export function fximgStartIndex(fxpic: Fximg) {
+        return fximgGetOffset(fxpic, 0x3);
+    }
+    export function fximgSetData(fximg: Fximg, dataType: FximgDataIdx, v: number) {
         if (fximgIsMetadataFrozen(fximg)) {
             throw `this ${fximgDataStr[dataType]} is immutable`
             return;
         }
         if (dataType >= 0x3) return;
-        const { idx, b2 } = fximgGetOffset(fximg[1], fximg[0], dataType);
+        const { idx, b2 } = fximgGetOffsetUtils((fximg as Buffer)[1], (fximg as Buffer)[0], dataType);
         if (idx < 0 || b2 < 0) return;
         if (b2 === 0x2) {
             if (v > 0xffffffff) v = 0xffffffff;
-            fximg.setNumber(NumberFormat.UInt32LE, idx, v);
+            (fximg as Buffer).setNumber(NumberFormat.UInt32LE, idx, v);
         } else if (b2 === 0x1) {
             if (v > 0xffff) v = 0xffff;
-            fximg.setNumber(NumberFormat.UInt16LE, idx, v);
+            (fximg as Buffer).setNumber(NumberFormat.UInt16LE, idx, v);
         } else if (b2 === 0x0) {
             if (v > 0xff) v = 0xff;
-            fximg.setNumber(NumberFormat.UInt8LE, idx, v);
+            (fximg as Buffer).setNumber(NumberFormat.UInt8LE, idx, v);
         }
-        fximg[2] = fximgMakeMetadataHash(fximg);
+        (fximg as Buffer)[2] = fximgMakeMetadataHash(fximg);
     }
-    export function fximgGetData(fximg: Buffer, dataType: FximgDataIdx) {
+    export function fximgGetData(fximg: Fximg, dataType: FximgDataIdx) {
         fximgValidation(fximg);
-        const { idx, b2 } = fximgGetOffset(fximg[1], fximg[0], dataType);
+        const { idx, b2 } = fximgGetOffsetUtils((fximg as Buffer)[1], (fximg as Buffer)[0], dataType);
         if (idx < 0 || b2 < 0) return -1;
         if (dataType >= 0x3) return idx;
         if (b2 >= 0x3) return -1;
-        if (b2 >= 0x2) return fximg.getNumber(NumberFormat.UInt32LE, idx);
-        if (b2 >= 0x1) return fximg.getNumber(NumberFormat.UInt16LE, idx);
-        return fximg.getNumber(NumberFormat.UInt8LE, idx);
+        if (b2 >= 0x2) return (fximg as Buffer).getNumber(NumberFormat.UInt32LE, idx);
+        if (b2 >= 0x1) return (fximg as Buffer).getNumber(NumberFormat.UInt16LE, idx);
+        return (fximg as Buffer).getNumber(NumberFormat.UInt8LE, idx);
     }
 
-    export function fximgWidthOf(fximg: Buffer) {
-        if (fximg.length < 1) return 0;
+    export function fximgWidthOf(fximg: Fximg) {
+        if ((fximg as Buffer).length < 1) return -1;
         return fximgGetData(fximg, 0x0);
     }
-    export function fximgHeightOf(fximg: Buffer) {
-        if (fximg.length < 1) return 0;
+    export function fximgHeightOf(fximg: Fximg) {
+        if ((fximg as Buffer).length < 1) return -1;
         return fximgGetData(fximg, 0x1);
     }
-    export function fximgLengthOf(fximg: Buffer) {
-        if (fximg.length < 5) return 0;
+    export function fximgLengthOf(fximg: Fximg) {
+        if ((fximg as Buffer).length < 5) return -1;
         return fximgGetData(fximg, 0x2);
     }
-    export function fximgDimensionOf(fximg: Buffer, d: image.Dimension) {
+    export function fximgDimensionOf(fximg: Fximg, d: image.Dimension) {
         switch (d) {
             case image.Dimension.Width: return fximgWidthOf(fximg);
             case image.Dimension.Height: return fximgHeightOf(fximg);
-        } return 0;
+        } return -1;
     }
 
     export function fximgInitMD(width: number, height: number, length: number) {

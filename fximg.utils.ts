@@ -17,12 +17,12 @@ namespace helpers {
 
     // ใน fximg.utils.ts หรือไฟล์ blit-related
     export function fximgBlitRow(
-        dst: Buffer,
+        dst: Fximg,
         xDst: number,
         yDst: number,
         wDst: number,   // ความกว้าง dst (ใช้เช็คขอบเขตเท่านั้น)
         hDst: number,   // ความสูง dst (ใช้เช็คขอบเขต)
-        src: Buffer,
+        src: Fximg,
         xSrc: number,
         hSrc: number    // ความสูงที่จะ copy (จำนวน pixel ใน column)
     ): void {
@@ -74,10 +74,10 @@ namespace helpers {
     }
 
     export function fximgBlit(
-        dst: Buffer,
+        dst: Fximg,
         xDst: number, yDst: number,
         wDst: number, hDst: number,
-        src: Buffer,
+        src: Fximg,
         xSrc: number, ySrc: number,
         wSrc: number, hSrc: number,
         transparent?: boolean,
@@ -166,7 +166,7 @@ namespace helpers {
     }
 
     // 1. drawLine (Bresenham ปรับปรุงตามที่ภัทรแนะนำ - ใช้ sx/sy ตรวจทิศทาง ไม่เช็คจุดเริ่ม=จุดจบ)
-    export function fximgDrawLine(fxpic: Buffer, x0: number, y0: number, x1: number, y1: number, color: number, idx?: number) {
+    export function fximgDrawLine(fxpic: Fximg, x0: number, y0: number, x1: number, y1: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         color &= 0xF;
         idx = idx || 0;
@@ -250,7 +250,7 @@ namespace helpers {
     }
 
     // 2. drawRect (ขอบ)
-    export function fximgDrawRect(fxpic: Buffer, x: number, y: number, width: number, height: number, color: number, idx?: number) {
+    export function fximgDrawRect(fxpic: Fximg, x: number, y: number, width: number, height: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         if (width < 1 || height < 1) return;
         fximgDrawLine(fxpic, x, y, x + width - 1, y, color, idx);
@@ -260,7 +260,7 @@ namespace helpers {
     }
 
     // 3. fillRect (เติมเต็ม)
-    export function fximgFillRect(fxpic: Buffer, x: number, y: number, width: number, height: number, color: number, idx?: number) {
+    export function fximgFillRect(fxpic: Fximg, x: number, y: number, width: number, height: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
@@ -285,7 +285,7 @@ namespace helpers {
     }
 
     // 6. drawCircle (midpoint circle - integer)
-    export function fximgDrawCircle(fxpic: Buffer, cx: number, cy: number, r: number, color: number, idx?: number) {
+    export function fximgDrawCircle(fxpic: Fximg, cx: number, cy: number, r: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         if (r < 1) return;
         idx = idx || 0;
@@ -316,7 +316,7 @@ namespace helpers {
     }
 
     // 7. fillCircle (ใช้ drawLine แนวนอน)
-    export function fximgFillCircle(fxpic: Buffer, cx: number, cy: number, r: number, color: number, idx?: number) {
+    export function fximgFillCircle(fxpic: Fximg, cx: number, cy: number, r: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         if (r < 1) return;
         idx = idx || 0;
@@ -330,7 +330,7 @@ namespace helpers {
             if (x < 0) continue;
             if (x >= w) break;
             fximg.getRows(fxpic, x, buf, h);
-            let dy = psqrt(r * r - dx * dx) | 0;
+            let dy = fximgPsqrt(r * r - dx * dx) | 0;
             const offset = cy - dy;
             buf.fill(color, Math.max(offset, 0), (dy << 1) + Math.min(offset, 0));
             fximg.setRows(fxpic, x, buf, h);
@@ -338,7 +338,7 @@ namespace helpers {
     }
 
     // 8. drawOval (midpoint oval - integer)
-    export function fximgDrawOval(fxpic: Buffer, cx: number, cy: number, rx: number, ry: number, color: number, idx?: number) {
+    export function fximgDrawOval(fxpic: Fximg, cx: number, cy: number, rx: number, ry: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         rx = Math.abs(rx); ry = Math.abs(ry);
         if (rx === 0 || ry === 0) return;
@@ -389,7 +389,7 @@ namespace helpers {
     }
 
     // 9. fillOval
-    export function fximgFillOval(fxpic: Buffer, cx: number, cy: number, rx: number, ry: number, color: number, idx?: number) {
+    export function fximgFillOval(fxpic: Fximg, cx: number, cy: number, rx: number, ry: number, color: number, idx?: number) {
         if (fximgRoCheck(fxpic)) return;
         if (rx < 1 || ry < 1) return;
         if (rx === ry) { fximgFillCircle(fxpic, cx, cy, rx, color, idx); return; }
@@ -407,7 +407,7 @@ namespace helpers {
             if (x < 0) continue;
             if (x >= w) break;
             fximg.getRows(fxpic, x, buf, h);
-            let dy = (psqrt(ry2 * (1 - ((dx * dx) * finv(rx2)))) + 0.5) | 0;
+            let dy = (fximgPsqrt(ry2 * (1 - ((dx * dx) * fximgFinv(rx2)))) + 0.5) | 0;
             const offset = cy - dy;
             buf.fill(color, Math.max(offset, 0), (dy << 1) + Math.min(offset, 0));
             fximg.setRows(fxpic, x, buf, h);
@@ -415,16 +415,16 @@ namespace helpers {
     }
 
     // 12. drawImage (ไม่ transparent)
-    export function fximgDrawImage(from: Buffer, fxpic: Buffer, dx: number, dy: number) {
-        fximgBulitDrawImage(from, fxpic, dx, dy, false);
+    export function fximgDrawImage(fxpic: Fximg, from: Fximg, dx: number, dy: number) {
+        fximgBulitDrawImage(fxpic, from, dx, dy, false);
     }
 
     // 13. drawTransparentImage (skip สี 0)
-    export function fximgDrawTransparentImage(from: Buffer, fxpic: Buffer, dx: number, dy: number) {
-        fximgBulitDrawImage(from, fxpic, dx, dy, true);
+    export function fximgDrawTransparentImage(fxpic: Fximg, from: Fximg, dx: number, dy: number) {
+        fximgBulitDrawImage(fxpic, from, dx, dy, true);
     }
 
-    function fximgBulitDrawImage(from: Buffer, to: Buffer, dx: number, dy: number, transparent: boolean) {
+    function fximgBulitDrawImage(to: Fximg, from: Fximg, dx: number, dy: number, transparent: boolean) {
         if (fximgRoCheck(from)) return;
         const sw = fximgWidthOf(from)
         const sh = fximgHeightOf(from);
@@ -456,7 +456,7 @@ namespace helpers {
     }
 
     // 14. scale (nearest neighbor)
-    export function fximgScale(fxpic: Buffer, width: number, height: number): Buffer {
+    export function fximgScale(fxpic: Fximg, width: number, height: number): Fximg {
         const ow = fximgWidthOf(fxpic);
         const oh = fximgHeightOf(fxpic);
         if (ow === width && oh === height) return fximgClone(fxpic);
@@ -473,11 +473,11 @@ namespace helpers {
             }
             fximgSetRows(to, x, toRowBuf, height);
         }
-        return to;
+        return to as Fximg;
     }
 
     // 15. rotate90 (n90 = 1,2,3 → 90°,180°,270°)
-    export function fximgRotate90(fxpic: Buffer, n90: number): Buffer {
+    export function fximgRotate90(fxpic: Fximg, n90: number): Fximg {
         n90 = n90 & 0x3;
         if (n90 === 0) return fximgClone(fxpic);
 
@@ -497,12 +497,12 @@ namespace helpers {
                 fximgSetPixel(dst, nx, ny, c);
             }
         }
-        return dst;
+        return dst as Fximg;
     }
 
     function fximgRotatedBounds(width: number, height: number, angle: number): number[] {
-        let s = Math.abs(fsin(angle));   // |sin| * 120
-        let c = Math.abs(fcos(angle));   // |cos| * 120
+        let s = Math.abs(fximgFsin(angle));   // |sin| * 120
+        let c = Math.abs(fximgFcos(angle));   // |cos| * 120
 
         // newW ≈ (|cos| * w + |sin| * h) / 120 + 1 (เผื่อ margin)
         let newW = 1 + (c * width + s * height) | 0;
@@ -516,7 +516,7 @@ namespace helpers {
     }
 
     // 16. rotate (theta 0-255 ด้วย sin/cos table)
-    export function fximgRotate(fxpic: Buffer, angle: number): Buffer {
+    export function fximgRotate(fxpic: Fximg, angle: number): Fximg {
         const ow = fximgWidthOf(fxpic)
         const oh = fximgHeightOf(fxpic);
 
@@ -533,8 +533,8 @@ namespace helpers {
         const srcCx = ow >> 1;
         const srcCy = oh >> 1;
 
-        const s = fsin(angle);
-        const c = fcos(angle);
+        const s = fximgFsin(angle);
+        const c = fximgFcos(angle);
 
         // วาดทุกพิกเซลจาก dst → map กลับไป src (reverse rotation เพื่อ fill hole)
         // หรือ forward จาก src → dst (แบบเดิม แต่ shift offset)
@@ -555,13 +555,13 @@ namespace helpers {
                 fximgSetPixel(dst, tx, ty, col);
             }
         }
-        return dst;
+        return dst as Fximg;
     }
 
-    const DEG_TO_RAD = Math.PI * finv(180);
+    const DEG_TO_RAD = Math.PI * fximgFinv(180);
 
     // 17. rotationFrame (สร้างหลายเฟรมหมุนเท่า ๆ กัน)
-    export function fximgRotationFrame(fxpic: Buffer, count: number): Buffer {
+    export function fximgRotationFrame(fxpic: Fximg, count: number): Fximg {
         if (count < 1) count = 1;
         const step = Math.idiv(360, count) * DEG_TO_RAD;
         let w = fximgWidthOf(fxpic)
@@ -577,11 +577,11 @@ namespace helpers {
             fximgDrawTransparentImage(bigBuf, frame, offset + Math.abs(bw - nw), Math.abs(bh - nh));
             offset += w + bw2;
         }
-        return bigBuf;
+        return bigBuf as Fximg;
     }
 
     // Optional: trim ขอบโปร่งใส (สี 0) ออกให้เหลือเฉพาะส่วนที่มีเนื้อหา
-    export function fximgTrim(fxpic: Buffer, trimMode?: FximgTrimType): Buffer {
+    export function fximgTrim(fxpic: Fximg, trimMode?: FximgTrimType): Fximg {
         switch (trimMode) {
             case 0x0: break;
             case 0x1: break;
@@ -669,11 +669,11 @@ namespace helpers {
             fximgSetRows(trimmed, x - minX, rowBuf, newH);  // ตัดส่วนบนล่างอัตโนมัติเพราะ setRows ใช้ len = newH
         }
 
-        return trimmed;
+        return trimmed as Fximg;
     }
 
     export function fximgDrawTriangle(
-        fxpic: Buffer,
+        fxpic: Fximg,
         x0: number, y0: number,
         x1: number, y1: number,
         x2: number, y2: number,
@@ -687,7 +687,7 @@ namespace helpers {
     const PI0_1 = Math.PI * 0.1;
 
     export function fximgFillTriangle(
-        fxpic: Buffer,
+        fxpic: Fximg,
         x0: number, y0: number,
         x1: number, y1: number,
         x2: number, y2: number,
@@ -759,7 +759,7 @@ namespace helpers {
     }
 
     export function fximgDrawPolygon4(
-        fxpic: Buffer,
+        fxpic: Fximg,
         x0: number, y0: number,
         x1: number, y1: number,
         x2: number, y2: number,
@@ -773,44 +773,44 @@ namespace helpers {
     }
 
     export function fximgFillPolygon4(
-        fxpic: Buffer,
+        fxpic: Fximg,
         x0: number, y0: number,
         x1: number, y1: number,
         x2: number, y2: number,
         x3: number, y3: number,
         color: number, idx?: number
     ) {
-        fximgFillTriangle(fxpic, x1, y1, x0, y0, x3, y3, color);
-        fximgFillTriangle(fxpic, x2, y2, x0, y0, x3, y3, color);
+        fximgFillTriangle(fxpic, x1, y1, x0, y0, x3, y3, color, idx);
+        fximgFillTriangle(fxpic, x2, y2, x0, y0, x3, y3, color, idx);
     }
 
     export function fximgDrawDistortedImage(
-        from: Buffer, to: Buffer,
-        x0:   number, y0: number,
-        x1:   number, y1: number,
-        x2:   number, y2: number,
-        x3?:  number, y3?:number,
+        to:  Fximg,  from: Fximg,
+        x0:  number, y0:   number,
+        x1:  number, y1:   number,
+        x2:  number, y2:   number,
+        x3?: number, y3?:  number,
     ) {
         fximgBuiltDrawDistortedImage(
-            from, to,
+            to, from,
             x0, y0, x1, y1,
             x2, y2, x3, y3,
-            false
+            false, true
         )
     }
 
     export function fximgDrawTransDistortedImage(
-        from: Buffer, to: Buffer,
-        x0:   number, y0: number,
-        x1:   number, y1: number,
-        x2:   number, y2: number,
-        x3?:  number, y3?:number,
+        to:  Fximg,  from: Fximg,
+        x0:  number, y0:   number,
+        x1:  number, y1:   number,
+        x2:  number, y2:   number,
+        x3?: number, y3?:  number,
     ) {
         fximgBuiltDrawDistortedImage(
-            from, to,
+            to, from,
             x0, y0, x1, y1,
             x2, y2, x3, y3,
-            true
+            true, true
         )
     }
 
@@ -840,7 +840,7 @@ namespace helpers {
     };
 
     function fximgBuiltDrawDistortedImage(
-        from: Buffer, to: Buffer,
+        to: Fximg, from: Fximg,
         x0:   number, y0: number,//p0:  { x: number, y: number },   // top-left
         x1:   number, y1: number,//p1:  { x: number, y: number },   // top-right
         x2:   number, y2: number,//p2:  { x: number, y: number },   // bottom-right
@@ -859,7 +859,7 @@ namespace helpers {
         // ถ้าใช้ dstTotalW แบบเดิม → const toTotalW = toW * fximgLengthOf(to); แต่ polymesh ไม่ใช้ เลยข้าม
 
         const fromRowBuf = pins.createBuffer(h);
-        const emptyHash = fromRowBuf.hash(0xffff) & 0xffff;
+        //const emptyHash = fromRowBuf.hash(0xffff) & 0xffff;
 
         const wInv = 1 / w;
         const hInv = 1 / h;
@@ -872,7 +872,7 @@ namespace helpers {
         );
 
         for (let sx = 0; sx < w; sx++) {
-            const ix = sx//center ? fximgZigzet(0, w - 1, sx) : sx;
+            const ix = center ? fximgZigzet(0, w - 1, sx) : sx;
             fximgGetRows(from, w - ix - 1, fromRowBuf, h);  // ใช้ w - ix -1 เหมือน polymesh (reverse ถ้า center)
 
             //if (fromRowBuf.hash(0xffff) === emptyHash) continue;
@@ -899,7 +899,7 @@ namespace helpers {
             );
 
             for (let sy = 0; sy < h; sy++) {
-                const iy = sy;//center ? fximgZigzet(0, h - 1, sy) : sy;
+                const iy = center ? fximgZigzet(0, h - 1, sy) : sy;
 
                 const color = fromRowBuf[iy];  // pixel แถวบนสุดหลัง shift
                 if (transparent && color < 1) continue;      // transparent
