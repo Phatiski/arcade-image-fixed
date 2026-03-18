@@ -154,13 +154,12 @@ namespace helpers {
         x |= 0; h |= 0;
         const len = Math.min(src.length, h);
         if (len <= 0 || fximgIsOutOfRange(x, fximgWidthOf(fxpic) * fximgLengthOf(fxpic))) return;
-
+    
         const start = fximgStartIndex(fxpic);
         const colStartBit = (x * h) & 1;   // 0 = even (aligned), 1 = odd (misaligned)
-
+    
         let srcIdx = 0;
         let dstByteIdx = start + ((x * h) >>> 1);
-
         if (colStartBit === 0) {
             // Fast path: aligned → copy byte-wise ได้เลย
             // src[0] ไป nybble สูงของ byte แรก, src[1] ไป nybble ต่ำ, ฯลฯ
@@ -226,13 +225,15 @@ namespace helpers {
         if (fximgRoCheck(fxpic)) return;
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
-        color &= 0xF;
-        const h = fximgHeightOf(fxpic);
-        const rowBuf = pins.createBuffer(h);
-        rowBuf.fill(color);
-        const w = fximgWidthOf(fxpic);
-        idx *= w;
-        for (let x = 0; x < w; x++) fximgSetRows(fxpic, idx + x, rowBuf, h);
+            control.runInParallel(() => {
+            color &= 0xF;
+            const h = fximgHeightOf(fxpic);
+            const rowBuf = pins.createBuffer(h);
+            rowBuf.fill(color);
+            const w = fximgWidthOf(fxpic);
+            idx *= w;
+            for (let x = 0; x < w; x++) fximgSetRows(fxpic, idx + x, rowBuf, h);
+        })
     }
 
     // 5. replace (แทนที่สี)
@@ -241,15 +242,17 @@ namespace helpers {
         from &= 0xF; to &= 0xF;
         idx = idx || 0;
         if (fximgIsOutOfRange(idx, fximgLengthOf(fxpic))) return;
-        const w = fximgWidthOf(fxpic);
-        idx *= w;
-        const h = fximgHeightOf(fxpic);
-        const rowBuf = pins.createBuffer(h);
-        for (let x = 0, rowChange = false; x < w; x++, rowChange = false) {
-            fximgGetRows(fxpic, idx + x, rowBuf, h);
-            for (let y = 0; y < h; y++) if (rowBuf[y] === from) rowBuf[y] = to, rowChange = true;
-            if (rowChange) fximgSetRows(fxpic, idx + x, rowBuf, h);
-        }
+            control.runInParallel(() => {
+            const w = fximgWidthOf(fxpic);
+            idx *= w;
+            const h = fximgHeightOf(fxpic);
+            const rowBuf = pins.createBuffer(h);
+            for (let x = 0, rowChange = false; x < w; x++, rowChange = false) {
+                fximgGetRows(fxpic, idx + x, rowBuf, h);
+                for (let y = 0; y < h; y++) if (rowBuf[y] === from) rowBuf[y] = to, rowChange = true;
+                if (rowChange) fximgSetRows(fxpic, idx + x, rowBuf, h);
+            }
+        })
     }
 
     export function fximgEqualTo(fxpic: Fximg, otherfxpic: Fximg) {

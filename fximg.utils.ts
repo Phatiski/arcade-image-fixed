@@ -136,26 +136,26 @@ namespace helpers {
             if (sx < 0) continue;
             if (sx >= clipWSrc) break;
             const dx = x + xDst;
-
+    
             // ดึง column ส่วนที่ต้องการจาก src (offset ySrc)
             if (sx !== curSx) fximgGetRows(src, sx, srcRow, safeSrcH), curSx = sx;
             fximgGetRows(dst, dx, dstRow, safeDstH);
-
+    
             for (let y = 0; y < clipHDst; y++) {
                 const sy = ((y * scaleY) | 0) + ySrc;
                 if (sy < 0) continue;
                 if (sy >= clipHSrc) break;
                 const dy = y + yDst;
                 const newPixel = srcRow[sy];  // pixel จาก src (หลัง shift ySrc แล้ว)
-
+    
                 if (transparent && newPixel < 1) continue;
-
+    
                 const oldPixel = dstRow[dy];
                 if (oldPixel === newPixel) continue;
                 dstRow[dy] = newPixel;
                 rowChange = true, anyChange = true;
             }
-
+    
             if (!rowChange) continue;
             fximgSetRows(dst, dx, dstRow, safeDstH);
 
@@ -269,13 +269,13 @@ namespace helpers {
         if (width < 1 || height < 1) return;
         color &= 0xF;
         idx *= w;
-
+    
         const sx = Math.clamp(0, w - 1, x);
         const ex = Math.clamp(0, w - 1, x + width - 1);
         const sy = Math.clamp(0, h - 1, y);
         const ey = Math.clamp(0, h - 1, y + height - 1);
         if (sx > ex || sy > ey) return;
-
+    
         const buf = pins.createBuffer(h);
         for (let cx = sx; cx <= ex; cx++) {
             fximgGetRows(fxpic, cx + idx, buf, h);
@@ -412,6 +412,7 @@ namespace helpers {
             buf.fill(color, Math.max(offset, 0), (dy << 1) + Math.min(offset, 0));
             fximg.setRows(fxpic, x, buf, h);
         }
+        
     }
 
     // 12. drawImage (ไม่ transparent)
@@ -430,26 +431,26 @@ namespace helpers {
         const sh = fximgHeightOf(from);
         const tw = fximgWidthOf(to)
         const th = fximgHeightOf(to);
-
+    
         const rowFrom = pins.createBuffer(sh);
         const rowTo = pins.createBuffer(th);
         for (let sx = 0; sx < sw; sx++) {
             let tx = dx + sx;
             if (tx < 0) continue;
             if (tx >= tw) break;
-
+    
             fximgGetRows(from, sx, rowFrom, sh);
             fximgGetRows(to, tx, rowTo, th);
-
+    
             const dyPos = Math.max(dy, 0);
             const dyNeg = Math.min(dy, 0);
-
+    
             const tmpRow = pins.createBuffer(sh + dyNeg);
             if (dyNeg < 0) rowFrom.shift(Math.abs(dyNeg))
             tmpRow.write(dyPos, rowFrom);
-
+    
             if (transparent) for (let i = 0; i < (sh + dyNeg); i++) if (tmpRow[i] < 1) tmpRow[i] = rowTo[dyPos + i];
-
+    
             rowTo.write(dyPos, tmpRow);
             fximgSetRows(to, tx, rowTo, th);
         }
@@ -703,27 +704,27 @@ namespace helpers {
         let v = [new pt2(x0, y0), new pt2(x1, y1), new pt2(x2, y2)];
         if (fximgIsOutOfAreas(v, w, h)) return;
         idx *= w;
-
+    
         // ------------------- Sort vertices by y (top -> bottom) -------------------
-
+    
         let tmp = -1;
         //Sort points so that x0 <= x1 <= x2
         if (x1 < x0) tmp = x0, x0 = x1, x1 = tmp, tmp = y0, y0 = y1, y1 = tmp;//[x0, y0, x1, y1] = [x1, y1, x0, y0];
         if (x2 < x0) tmp = x2, x2 = x0, x0 = tmp, tmp = y2, y2 = y0, y0 = tmp;//[x2, y2, x0, y0] = [x0, y0, x2, y2];
         if (x2 < x1) tmp = x2, x2 = x1, x1 = tmp, tmp = y2, y2 = y1, y1 = tmp;//[x2, y2, x1, y1] = [x1, y1, x2, y2];
-
+    
         //Compute the x coordinates of the triangles edges
         let y012 = interpolate(x0, y0, x1, y1, w, h).concat(interpolate(x1, y1, x2, y2, w, h));
         let y02 = interpolate(x0, y0, x2, y2, w, h);
-
+    
         if (y012.length < 1 || y02.length < 1) return;
-
+    
         //Ensure the arrays are the correct length
         if (y012.length > y02.length)
             y012.pop();
         else if (y012.length < y02.length)
             y02.pop();
-
+    
         //Determine which is left and which is right
         let yts: number[] = [];
         let ybs: number[] = [];
@@ -736,9 +737,9 @@ namespace helpers {
         else
             yts = y012,
             ybs = y02;
-
+    
         const buf = pins.createBuffer(h);
-
+    
         //Draw em
         //TODO: just write to the buffer with fill; place any bitwise operations for dithering patterns thusly
         const drawX = (x: number, xi: number) => {
@@ -750,7 +751,7 @@ namespace helpers {
             buf.fill(color, Math.max(yt, 0), fillSize);
             fximgSetRows(fxpic, x, buf, h);
         }
-
+    
         for (let x = x0, xi = 0; x <= x2; x++, xi++) {
             drawX(x, xi);
             drawX(++x, ++xi);
@@ -857,29 +858,29 @@ namespace helpers {
         const toW = fximgWidthOf(to);
         const toH = fximgHeightOf(to);
         // ถ้าใช้ dstTotalW แบบเดิม → const toTotalW = toW * fximgLengthOf(to); แต่ polymesh ไม่ใช้ เลยข้าม
-
+    
         const fromRowBuf = pins.createBuffer(h);
         //const emptyHash = fromRowBuf.hash(0xffff) & 0xffff;
-
+    
         const wInv = 1 / w;
         const hInv = 1 / h;
-
+    
         const pqu = new pt2_2(
             (x1 - x0),
             (y1 - y0),
             (x2 - x3),
             (y2 - y3)
         );
-
+    
         for (let sx = 0; sx < w; sx++) {
             const ix = center ? fximgZigzet(0, w - 1, sx) : sx;
             fximgGetRows(from, w - ix - 1, fromRowBuf, h);  // ใช้ w - ix -1 เหมือน polymesh (reverse ถ้า center)
-
+    
             //if (fromRowBuf.hash(0xffff) === emptyHash) continue;
-
+    
             const u0 = (ix * wInv);
             const u1 = ((ix + 1) * wInv);
-
+    
             const qu = new pt2_4(
                 x0 + pqu.x0 * u0,
                 y0 + pqu.y0 * u0,
@@ -890,23 +891,23 @@ namespace helpers {
                 x3 + pqu.x1 * u1,
                 y3 + pqu.y1 * u1
             );
-
+    
             const pqv = new pt2_2(
                 (qu.x1 - qu.x0),
                 (qu.y1 - qu.y0),
                 (qu.x3 - qu.x2),
                 (qu.y3 - qu.y2)
             );
-
+    
             for (let sy = 0; sy < h; sy++) {
                 const iy = center ? fximgZigzet(0, h - 1, sy) : sy;
-
+    
                 const color = fromRowBuf[iy];  // pixel แถวบนสุดหลัง shift
                 if (transparent && color < 1) continue;      // transparent
-
+    
                 const v0 = (iy * hInv);
                 const v1 = ((iy + 1) * hInv);
-
+    
                 const qv = new pt2_4(
                     (qu.x0 + pqv.x0 * v0) | 0,
                     (qu.y0 + pqv.y0 * v0) | 0,
@@ -917,16 +918,16 @@ namespace helpers {
                     (qu.x2 + pqv.x1 * v1) | 0,
                     (qu.y2 + pqv.y1 * v1) | 0
                 );
-
+    
                 // Skip ถ้าทั้ง quad ออกนอกจอ (เหมือน polymesh)
                 if (qv.toArr.every(pt =>
                     pt.x < 0 || pt.x >= toW || pt.y < 0 || pt.y >= toH
                 )) continue;
-
+    
                 // Stamp ด้วย 2 triangle (สไตล์ polymesh)
                 fximgFillTriangle(to, qv.x1, qv.y1, qv.x0, qv.y0, qv.x3, qv.y3, color);
                 fximgFillTriangle(to, qv.x2, qv.y2, qv.x0, qv.y0, qv.x3, qv.y3, color);
-
+    
                 // หรือถ้าอยากใช้ polygon4 เดิม (อาจแก้ gap ได้ดีกว่าในบางเคส)
                 // fximgFillPolygon4(to, qv.x1, qv.y1, qv.x0, qv.y0, qv.x2, qv.y2, qv.x3, qv.y3, color);
             }

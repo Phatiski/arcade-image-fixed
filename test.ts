@@ -35,30 +35,32 @@ if (1) {
 
 
 game.onUpdate(() => {
-    let j = randint(1, 4);
-    for (let i = 0; i < j; i++) {
-        if (0) fximg.fillPolygon4(imgfxb,
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0x0, 0xf)
-        );
-        if (1) fximg.drawTransDistortedImage(imgfxb, imgfxa,
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0, w - 1), randint(10, h - 1),
-        );
-        if (0) fximg.fillTriangle(imgfxb,
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0, w - 1), randint(10, h - 1),
-            randint(0x0, 0xf),
-        );
-        //scene.setBackgroundImage(fximg.toImage(imgfxb));
-    }
-    scene.setBackgroundImage(fximg.toImage(imgfxb));
-    scene.backgroundImage().print(`draw count: ${j}`, 1, 1, 0x1)
+    control.runInParallel(() => {
+        let j = 1//randint(1, 4);
+        for (let i = 0; i < j; i++) {
+            if (0) fximg.fillPolygon4(imgfxb,
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0x0, 0xf)
+            );
+            if (1) fximg.drawTransDistortedImage(imgfxb, imgfxa,
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0, w - 1), randint(10, h - 1),
+            );
+            if (0) fximg.fillTriangle(imgfxb,
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0, w - 1), randint(10, h - 1),
+                randint(0x0, 0xf),
+            );
+            //scene.setBackgroundImage(fximg.toImage(imgfxb));
+        }
+        scene.setBackgroundImage(fximg.toImage(imgfxb));
+        scene.backgroundImage().print(`draw count: ${j}`, 1, 1, 0x1)
+    })
 })
 
