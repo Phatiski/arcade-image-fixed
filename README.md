@@ -1,5 +1,5 @@
- 
-> <del>download offline extension [here](https://github.com/Phatiski/arcade-image-fixed/raw/refs/heads/master/arcade-fixed-image.uf2)</del>
+
+
 
 > Open this page at [https://phatiski.github.io/arcade-image-fixed/](https://phatiski.github.io/arcade-image-fixed/)
 
