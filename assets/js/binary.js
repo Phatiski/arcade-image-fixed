@@ -1,5 +1,5 @@
-// meta={"simUrl":"https://trg-arcade.userpxt.io/v4.0.12/---simulator","cdnUrl":"https://cdn.makecode.com","version":"5.0.0","target":"arcade","targetVersion":"4.0.12","repo":"phatiski/arcade-image-fixed"}
-// total=1895237 new=11.83% cached=61.27% other=26.90%
+// meta={"simUrl":"https://trg-arcade.userpxt.io/v4.0.12/---simulator","cdnUrl":"https://cdn.makecode.com","version":"6.0.0","target":"arcade","targetVersion":"4.0.12","repo":"phatiski/arcade-image-fixed"}
+// total=1895309 new=11.83% cached=61.26% other=26.90%
 (function (ectx) {
 'use strict';
 const runtime = ectx.runtime;
@@ -480,7 +480,7 @@ const pxsim_pxtrt = pxsim.pxtrt;
 const pxsim_numops = pxsim.numops;
 
 
-function _main___P402009(s) {
+function _main___P500722(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -912,14 +912,14 @@ switch (step) {
     s.callLocIdx = 221; s.pc = 40; return s.tmp_0;
   case 40:
     r0 = s.retval;
-    s.tmp_0 = fximg_fromImage__P4520_mk(s);
+    s.tmp_0 = fximg_fromImage__P499519_mk(s);
     r0 = pxsim.image.ofBuffer(_hex401189);
     s.tmp_0.arg0 = r0;
     s.callLocIdx = 222; s.pc = 41; return s.tmp_0;
   case 41:
     r0 = s.retval;
     globals.imgfxa___401190 = (r0);
-    s.tmp_0 = fximg_fromImage__P4520_mk(s);
+    s.tmp_0 = fximg_fromImage__P499519_mk(s);
     s.tmp_1 = scene_backgroundImage__P2931_mk(s);
     s.callLocIdx = 223; s.pc = 43; return s.tmp_1;
   case 43:
@@ -929,13 +929,13 @@ switch (step) {
   case 42:
     r0 = s.retval;
     globals.imgfxb___401195 = (r0);
-    s.tmp_0 = fximg_widthOf__P4514_mk(s);
+    s.tmp_0 = fximg_widthOf__P499487_mk(s);
     s.tmp_0.arg0 = globals.imgfxb___401195;
     s.callLocIdx = 225; s.pc = 44; return s.tmp_0;
   case 44:
     r0 = s.retval;
     globals.w___401200 = (r0);
-    s.tmp_0 = fximg_heightOf__P4515_mk(s);
+    s.tmp_0 = fximg_heightOf__P499491_mk(s);
     s.tmp_0.arg0 = globals.imgfxb___401195;
     s.callLocIdx = 226; s.pc = 45; return s.tmp_0;
   case 45:
@@ -954,13 +954,13 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-_main___P402009.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
-_main___P402009.continuations = [  ]
+_main___P500722.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
+_main___P500722.continuations = [  ]
 
-function _main___P402009_mk(s) {
+function _main___P500722_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: _main___P402009, depth: s.depth + 1,
+        parent: s, fn: _main___P500722, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   tmp_1: undefined,
@@ -1841,8 +1841,8 @@ switch (step) {
 
     s.cur___8136 = undefined;
     s.pic___8143 = undefined;
-    s.unnamed3222___U2 = undefined;
-    s.unnamed3223___U3 = undefined;
+    s.unnamed4394___U2 = undefined;
+    s.unnamed4395___U3 = undefined;
     if (s.lambdaArgs) {
       s.arg0 = (s.lambdaArgs[0]);
       s.lambdaArgs = null;
@@ -1863,15 +1863,15 @@ switch (step) {
     r0 = pxsim_pxtrt.mapSetByString(s.tmp_0, "empty", 0);
     s.cur___8136 = (s.tmp_0);
     s.pic___8143 = (undefined);
-    s.unnamed3222___U2 = (s.arg0);
-    s.unnamed3223___U3 = (0);
+    s.unnamed4394___U2 = (s.arg0);
+    s.unnamed4395___U3 = (0);
   case 1:
-    s.tmp_0 = r0 = s.unnamed3223___U3;
-    r0 = pxsim_Array__length(s.unnamed3222___U2);
+    s.tmp_0 = r0 = s.unnamed4395___U3;
+    r0 = pxsim_Array__length(s.unnamed4394___U2);
     s.tmp_1 = r0;
     r0 = (s.tmp_0 < s.tmp_1);
     if (!r0) { step = 4; continue; }
-    r0 = pxsim_Array__getAt(s.unnamed3222___U2, s.unnamed3223___U3);
+    r0 = pxsim_Array__getAt(s.unnamed4394___U2, s.unnamed4395___U3);
     s.pic___8143 = (r0);
     s.tmp_2 = if_width_2_mk(s);
     s.tmp_2.arg0 = s.cur___8136;
@@ -1979,11 +1979,11 @@ switch (step) {
     r0 = s.retval;
   case 2:
   case 3:
-    r0 = (s.unnamed3223___U3 + 1);
-    s.unnamed3223___U3 = (r0);
+    r0 = (s.unnamed4395___U3 + 1);
+    s.unnamed4395___U3 = (r0);
     { step = 1; continue; }
   case 4:
-    s.unnamed3222___U2 = (undefined);
+    s.unnamed4394___U2 = (undefined);
     s.tmp_0 = if_area_2_mk(s);
     s.tmp_0.arg0 = s.cur___8136;
     s.tmp_2 = if_width_1_mk(s);
@@ -2046,8 +2046,8 @@ function fximgMaxImgSizes_inline__P8133_mk(s) {
   tmp_8: undefined,
   cur___8136: undefined,
   pic___8143: undefined,
-  unnamed3222___U2: undefined,
-  unnamed3223___U3: undefined,
+  unnamed4394___U2: undefined,
+  unnamed4395___U3: undefined,
   arg0: undefined,
 } }
 
@@ -2169,7 +2169,7 @@ switch (step) {
     if (!r0) { step = 8; continue; }
     r0 = pxsim_numops_toBoolDecr(0);
     if (!r0) { step = 2; continue; }
-    s.tmp_1 = fximg_fillPolygon4__P4548_mk(s);
+    s.tmp_1 = fximg_fillPolygon4__P499833_mk(s);
     s.tmp_1.arg0 = globals.imgfxb___401195;
     r0 = (globals.w___401200 - 1);
     s.tmp_2 = r0;
@@ -2212,7 +2212,7 @@ switch (step) {
   case 3:
     r0 = pxsim_numops_toBoolDecr(1);
     if (!r0) { step = 4; continue; }
-    s.tmp_0 = fximg_drawTransDistortedImage__P4552_mk(s);
+    s.tmp_0 = fximg_drawTransDistortedImage__P499898_mk(s);
     s.tmp_0.arg0 = globals.imgfxb___401195;
     s.tmp_0.arg1 = globals.imgfxa___401190;
     r0 = (globals.w___401200 - 1);
@@ -2254,7 +2254,7 @@ switch (step) {
   case 5:
     r0 = pxsim_numops_toBoolDecr(0);
     if (!r0) { step = 6; continue; }
-    s.tmp_0 = fximg_fillTriangle__P4546_mk(s);
+    s.tmp_0 = fximg_fillTriangle__P499791_mk(s);
     s.tmp_0.arg0 = globals.imgfxb___401195;
     r0 = (globals.w___401200 - 1);
     s.tmp_1 = r0;
@@ -2292,7 +2292,7 @@ switch (step) {
     { step = 1; continue; }
   case 8:
     s.tmp_0 = scene_setBackgroundImage__P2930_mk(s);
-    s.tmp_1 = fximg_toImage__P4521_mk(s);
+    s.tmp_1 = fximg_toImage__P499524_mk(s);
     s.tmp_1.arg0 = globals.imgfxb___401195;
     s.callLocIdx = 230; s.pc = 13; return s.tmp_1;
   case 13:
@@ -3191,7 +3191,7 @@ function helpers_imageDrawIcon__P1958_mk(s) {
 
 
 
-function fximg_toImage__P4521(s) {
+function fximg_toImage__P499524(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -3213,12 +3213,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-fximg_toImage__P4521.info = {"start":3278,"length":84,"line":94,"column":4,"endLine":94,"endColumn":88,"fileName":"fximg.ts","functionName":"toImage","argumentNames":["fxpic"]}
+fximg_toImage__P499524.info = {"start":3390,"length":84,"line":96,"column":4,"endLine":96,"endColumn":88,"fileName":"fximg.ts","functionName":"toImage","argumentNames":["fxpic"]}
 
-function fximg_toImage__P4521_mk(s) {
+function fximg_toImage__P499524_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: fximg_toImage__P4521, depth: s.depth + 1,
+        parent: s, fn: fximg_toImage__P499524, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
@@ -4605,7 +4605,7 @@ function scene_Background_image__P2719_mk(s) {
 
 
 
-function fximg_fillTriangle__P4546(s) {
+function fximg_fillTriangle__P499791(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -4643,12 +4643,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-fximg_fillTriangle__P4546.info = {"start":10570,"length":198,"line":228,"column":4,"endLine":228,"endColumn":202,"fileName":"fximg.ts","functionName":"fillTriangle","argumentNames":["fxpic","x0","y0","x1","y1","x2","y2","color"]}
+fximg_fillTriangle__P499791.info = {"start":10682,"length":198,"line":230,"column":4,"endLine":230,"endColumn":202,"fileName":"fximg.ts","functionName":"fillTriangle","argumentNames":["fxpic","x0","y0","x1","y1","x2","y2","color"]}
 
-function fximg_fillTriangle__P4546_mk(s) {
+function fximg_fillTriangle__P499791_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: fximg_fillTriangle__P4546, depth: s.depth + 1,
+        parent: s, fn: fximg_fillTriangle__P499791, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
@@ -6344,7 +6344,7 @@ function helpers_fximgIsReadonly__P393123_mk(s) {
 
 
 
-function fximg_drawTransDistortedImage__P4552(s) {
+function fximg_drawTransDistortedImage__P499898(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -6385,12 +6385,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-fximg_drawTransDistortedImage__P4552.info = {"start":12042,"length":251,"line":250,"column":4,"endLine":250,"endColumn":255,"fileName":"fximg.ts","functionName":"drawTransDistortedImage","argumentNames":["fxpic","from","x0","y0","x1","y1","x2","y2","x3","y3"]}
+fximg_drawTransDistortedImage__P499898.info = {"start":12154,"length":251,"line":252,"column":4,"endLine":252,"endColumn":255,"fileName":"fximg.ts","functionName":"drawTransDistortedImage","argumentNames":["fxpic","from","x0","y0","x1","y1","x2","y2","x3","y3"]}
 
-function fximg_drawTransDistortedImage__P4552_mk(s) {
+function fximg_drawTransDistortedImage__P499898_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: fximg_drawTransDistortedImage__P4552, depth: s.depth + 1,
+        parent: s, fn: fximg_drawTransDistortedImage__P499898, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
@@ -7296,7 +7296,7 @@ function helpers_pt2_2_constructor__P51088_mk(s) {
 
 
 
-function fximg_fillPolygon4__P4548(s) {
+function fximg_fillPolygon4__P499833(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -7338,12 +7338,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-fximg_fillPolygon4__P4548.info = {"start":11034,"length":230,"line":234,"column":4,"endLine":234,"endColumn":234,"fileName":"fximg.ts","functionName":"fillPolygon4","argumentNames":["fxpic","x0","y0","x1","y1","x2","y2","x3","y3","color"]}
+fximg_fillPolygon4__P499833.info = {"start":11146,"length":230,"line":236,"column":4,"endLine":236,"endColumn":234,"fileName":"fximg.ts","functionName":"fillPolygon4","argumentNames":["fxpic","x0","y0","x1","y1","x2","y2","x3","y3","color"]}
 
-function fximg_fillPolygon4__P4548_mk(s) {
+function fximg_fillPolygon4__P499833_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: fximg_fillPolygon4__P4548, depth: s.depth + 1,
+        parent: s, fn: fximg_fillPolygon4__P499833, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
@@ -8849,7 +8849,7 @@ function control_EventHandler_register_inline__P13530_mk(s) {
 
 
 
-function fximg_heightOf__P4515(s) {
+function fximg_heightOf__P499491(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -8871,12 +8871,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-fximg_heightOf__P4515.info = {"start":1906,"length":87,"line":62,"column":4,"endLine":62,"endColumn":91,"fileName":"fximg.ts","functionName":"heightOf","argumentNames":["fxpic"]}
+fximg_heightOf__P499491.info = {"start":2018,"length":87,"line":64,"column":4,"endLine":64,"endColumn":91,"fileName":"fximg.ts","functionName":"heightOf","argumentNames":["fxpic"]}
 
-function fximg_heightOf__P4515_mk(s) {
+function fximg_heightOf__P499491_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: fximg_heightOf__P4515, depth: s.depth + 1,
+        parent: s, fn: fximg_heightOf__P499491, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
@@ -8885,7 +8885,7 @@ function fximg_heightOf__P4515_mk(s) {
 
 
 
-function fximg_widthOf__P4514(s) {
+function fximg_widthOf__P499487(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -8907,12 +8907,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-fximg_widthOf__P4514.info = {"start":1803,"length":85,"line":59,"column":4,"endLine":59,"endColumn":89,"fileName":"fximg.ts","functionName":"widthOf","argumentNames":["fxpic"]}
+fximg_widthOf__P499487.info = {"start":1915,"length":85,"line":61,"column":4,"endLine":61,"endColumn":89,"fileName":"fximg.ts","functionName":"widthOf","argumentNames":["fxpic"]}
 
-function fximg_widthOf__P4514_mk(s) {
+function fximg_widthOf__P499487_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: fximg_widthOf__P4514, depth: s.depth + 1,
+        parent: s, fn: fximg_widthOf__P499487, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
@@ -8960,7 +8960,7 @@ function scene_backgroundImage__P2931_mk(s) {
 
 
 
-function fximg_fromImage__P4520(s) {
+function fximg_fromImage__P499519(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -8983,12 +8983,12 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-fximg_fromImage__P4520.info = {"start":3042,"length":84,"line":88,"column":4,"endLine":88,"endColumn":88,"fileName":"fximg.ts","functionName":"fromImage","argumentNames":["pic"]}
+fximg_fromImage__P499519.info = {"start":3154,"length":84,"line":90,"column":4,"endLine":90,"endColumn":88,"fileName":"fximg.ts","functionName":"fromImage","argumentNames":["pic"]}
 
-function fximg_fromImage__P4520_mk(s) {
+function fximg_fromImage__P499519_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: fximg_fromImage__P4520, depth: s.depth + 1,
+        parent: s, fn: fximg_fromImage__P499519, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   arg0: undefined,
@@ -50228,5 +50228,5 @@ const sprites_BaseSpriteSayRenderer__C2276_VT = mkVTable({
 
 const breakpoints = setupDebugger(1, ["fximgDataStr___392859","fximgPos2idx___392930","fximgIsEmptyImage___392941","fximgNumToHex___392955","fximgHextxt___392952","fximgNumLeftZeroPad___392977","fximgHashAlert___393000","fximgMaxImgSizes___8134","DEG_TO_RAD___50276","fximgZigzet___51047","imgfxa___401190","imgfxb___401195","w___401200","h___401204","fximgValidate___392653"])
 
-return _main___P402009
+return _main___P500722
 })

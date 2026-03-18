@@ -1,6 +1,6 @@
 {
     "name": "fixed image",
-    "version": "5.0.0",
+    "version": "6.0.0",
     "description": "fixed picture manager like standard arcade image in standalone version ",
     "dependencies": {
         "device": "*"
