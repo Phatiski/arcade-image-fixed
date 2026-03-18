@@ -199,6 +199,7 @@ signture mismatch:
     }
 
     function fximgHeaderCheck(fximg: Fximg) {
+        if (!fximgValidate) return;
         if (fximgIsValidHeader(fximg)) return;
         const hash = fximgMakeHeaderHash(fximg)
         fximgHashAlert((fximg as Buffer)[0], hash)
@@ -287,22 +288,20 @@ signture mismatch:
         if (idxType < 0x0 || idxType > 0x3) return { idx: -1, b2: -1 }
         header &= 0xff;
         let idx = 3, b2 = 0;
-        if (idxType >= 0x0) {
-            b2 = (header >> 4);
+        for (let i = 0; i <= idxType; i++) {
+            if (i >= 0x3) break;
+            b2 = (header >> (i * 2));
             b2 &= 0x3;
-            if (idxType > 0x0) idx += (1 << b2);
-        }
-        if (idxType >= 0x1) {
-            b2 = (header >> 2);
-            b2 &= 0x3;
-            if (idxType > 0x1) idx += (1 << b2);
-        }
-        if (idxType >= 0x2) {
-            b2 = (header);
-            b2 &= 0x3;
-            if (idxType > 0x2) idx += (1 << b2);
+            if (i < idxType) idx += (1 << b2)
         }
         return { idx: idx, b2: b2 }
+    }
+    export function fximgGetHeaderData(header: number, idxType: FximgDataIdx) {
+        header &= 0xff;
+        if (idxType >= 3) return -1;
+        let b2 = (header >> ((2 - idxType) * 2));
+        b2 &= 0x3
+        return b2;
     }
     export function fximgGetIndex(fximg: Fximg, idxType: FximgDataIdx) {
         return fximgGetOffsetUtils((fximg as Buffer)[1], (fximg as Buffer)[0], idxType);
@@ -319,7 +318,8 @@ signture mismatch:
             return;
         }
         if (dataType >= 0x3) return;
-        const { idx, b2 } = fximgGetOffsetUtils((fximg as Buffer)[1], (fximg as Buffer)[0], dataType);
+        const idx = fximgGetOffset(fximg, dataType);
+        const b2  = fximgGetHeaderData((fximg as Buffer)[1], dataType)
         if (idx < 0 || b2 < 0) return;
         if (b2 === 0x2) {
             if (v > 0xffffffff) v = 0xffffffff;
@@ -335,7 +335,8 @@ signture mismatch:
     }
     export function fximgGetData(fximg: Fximg, dataType: FximgDataIdx) {
         fximgValidation(fximg);
-        const { idx, b2 } = fximgGetOffsetUtils((fximg as Buffer)[1], (fximg as Buffer)[0], dataType);
+        const idx = fximgGetOffset(fximg, dataType);
+        const b2  = fximgGetHeaderData((fximg as Buffer)[1], dataType);
         if (idx < 0 || b2 < 0) return -1;
         if (dataType >= 0x3) return idx;
         if (b2 >= 0x3) return -1;
