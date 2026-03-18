@@ -25,15 +25,15 @@ namespace fximges {
     // fximg pixel-data -> 1nibble per 1pixel (1-16 index color)
     // 
     //                       data structure
-    //               [ byte1     = header'sHashDB  ]
+    //               [ byte1     = header'sHash    ]
     //               [ byte1     = header          ]
-    //               [ byte1     = metadata'sHashDB]
+    //               [ byte1     = metadata'sHash  ]
     //               [ byte1>2>4 = width           ]
     //               [ byte1>2>4 = height          ]
     //               [ byte1>2>4 = length          ]
     //               [ byte1<n   = nibblePixelData ]
-    //               [ byte1<4   = offsetData      ]
-    //               [ byte1     = offset'sHashDB  ]
+    //               [ byte1<4   = preOffsetData   ]
+    //               [ byte1     = preOffset'sHash ]
 
 }
 
