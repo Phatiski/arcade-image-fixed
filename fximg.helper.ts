@@ -266,9 +266,6 @@ signture mismatch:
         const fxpic = pins.createBuffer(md.start + ((1 + (width * height * length)) >>> 1) + 5) as Fximg;
         (fxpic as Buffer)[0] = md.hash;
         (fxpic as Buffer)[1] = md.header;
-        fximgSetData(fxpic, 0x0, width);
-        fximgSetData(fxpic, 0x1, height);
-        fximgSetData(fxpic, 0x2, length);
         const offsetData = pins.createBuffer(4);
         offsetData[0] = fximgGetIndex(fxpic, 0x0).idx & 0xff;
         offsetData[1] = fximgGetIndex(fxpic, 0x1).idx & 0xff;
@@ -276,8 +273,10 @@ signture mismatch:
         offsetData[3] = fximgGetIndex(fxpic, 0x3).idx & 0xff;
         const offsetHash = offsetData.hash(HASH_POWER) & 0xff;
         (fxpic as Buffer).write((fxpic as Buffer).length - 5, offsetData);
-        let text = fximgStartIndex(fxpic);
         (fxpic as Buffer)[(fxpic as Buffer).length - 1] = offsetHash;
+        fximgSetData(fxpic, 0x0, width);
+        fximgSetData(fxpic, 0x1, height);
+        fximgSetData(fxpic, 0x2, length);
         fximgSetMetadataFrozen(fxpic, true);
         if (ro) fximgSetReadonly(fxpic, true);
         return fxpic as Fximg;
